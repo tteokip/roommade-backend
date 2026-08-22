@@ -1,0 +1,11 @@
+# 이 파일을 db.properties 로 복사한 뒤 값을 채워서 사용하세요.
+# cp src/main/resources/db.properties.sample src/main/resources/db.properties
+#
+# 로컬 MySQL 환경은 추후 Docker Compose로 통일할 예정입니다.
+# 값이 비어 있거나 db.properties가 없어도 서버 기동 자체는 가능하며,
+# 실제 DB 연결은 MyBatis 쿼리를 호출하는 시점에만 필요합니다.
+
+jdbc.driver=com.mysql.cj.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/roommade
+jdbc.username=root
+jdbc.password=changeme
