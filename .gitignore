@@ -39,6 +39,7 @@ build/
 # Local DB / env config
 db.properties
 *.env
+.env
 
 # OS
 .DS_Store

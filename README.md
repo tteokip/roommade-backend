@@ -9,7 +9,7 @@
 - MyBatis
 - Gradle
 - Tomcat (로컬 구동: Gretty 플러그인)
-- MySQL (예정 — DB 연결은 추후 Docker로 통일 예정)
+- MySQL (Docker Compose로 로컬 개발 환경 구성)
 - Lombok
 - Logback
 
@@ -46,15 +46,34 @@ src/main/webapp/WEB-INF/
 > cmd나 PowerShell을 사용한다면 아래 표의 운영체제별 명령어를 참고하세요.
 
 1. 저장소를 clone 합니다.
-2. DB 접속 정보 파일을 준비합니다. (아직 값이 없어도 서버 기동에는 문제 없습니다 —
-   MyBatis 쿼리를 실제로 호출할 때만 DB 연결이 필요합니다. DB 환경은 추후 Docker로
-   통일할 예정입니다.)
+
+2. Docker Desktop이 설치되어 있고 실행 중인지 확인합니다.
+
+   ```bash
+   docker info
+   ```
+
+   정보가 정상적으로 출력되면 실행 중인 것입니다. 출력되지 않으면 Docker Desktop을 먼저 켜주세요.
+
+3. 환경 변수 파일과 DB 접속 정보 파일을 준비합니다. 두 파일 모두 로컬 전용 값이며 커밋되지 않습니다(`.gitignore` 처리됨).
 
    | macOS / Linux / Git Bash | Windows (cmd) | Windows (PowerShell) |
    |---|---|---|
+   | `cp .env.sample .env` | `copy .env.sample .env` | `Copy-Item .env.sample .env` |
    | `cp src/main/resources/db.properties.sample src/main/resources/db.properties` | `copy src\main\resources\db.properties.sample src\main\resources\db.properties` | `Copy-Item src\main\resources\db.properties.sample src\main\resources\db.properties` |
 
-3. 빌드하고 서버를 기동합니다.
+   `.env`의 포트·계정·DB명을 바꿨다면 `db.properties`도 함께 맞춰주세요.
+
+4. Docker로 로컬 MySQL을 띄우고, 정상 기동(`healthy`)될 때까지 기다립니다.
+
+   ```bash
+   docker compose up -d
+   docker compose ps
+   ```
+
+   `mysql` 서비스의 `STATUS`가 `healthy`로 바뀔 때까지 몇 초 걸립니다(최초 실행 시 이미지 다운로드 포함).
+
+5. 빌드하고 서버를 기동합니다.
 
    | 작업 | macOS / Linux / Git Bash | Windows (cmd) | Windows (PowerShell) |
    |---|---|---|---|
@@ -63,12 +82,24 @@ src/main/webapp/WEB-INF/
 
    Gretty가 내장 Tomcat으로 `http://localhost:8080`에 서버를 띄웁니다.
 
-4. 정상 기동 여부를 확인합니다.
+6. 정상 기동 및 DB 연결 여부를 확인합니다.
 
    ```bash
    curl http://localhost:8080/
    # roommade-backend is running
+
+   curl http://localhost:8080/health/db
+   # {"status":"UP","database":"UP"}
    ```
+
+## MySQL 컨테이너 종료
+
+작업을 마치면 컨테이너를 내립니다. 두 명령은 동작이 다르니 구분해서 사용하세요.
+
+| 명령 | 동작 |
+|---|---|
+| `docker compose down` | 컨테이너만 종료·삭제합니다. 데이터는 볼륨에 남아 다음 `up` 때 그대로 이어집니다. |
+| `docker compose down -v` | 컨테이너와 **데이터 볼륨까지 삭제**합니다. 로컬 DB 데이터가 전부 사라지므로, 정말 초기화가 필요할 때만 사용하세요. |
 
 ## 기여 가이드
 
