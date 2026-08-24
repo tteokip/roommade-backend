@@ -12,11 +12,6 @@
 
     <context:property-placeholder location="classpath:db.properties" ignore-resource-not-found="true"/>
 
-    <!--
-        db.properties가 없거나 값이 비어 있어도(DB 미기동 상태) 기동은 되도록
-        DriverManagerDataSource를 사용한다. 실제 커넥션은 첫 쿼리 시점에 시도된다.
-        Docker 기반 DB 구성은 별도 작업으로 진행 예정.
-    -->
     <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
         <property name="driverClassName" value="${jdbc.driver:com.mysql.cj.jdbc.Driver}"/>
         <property name="url" value="${jdbc.url:jdbc:mysql://localhost:3306/roommade}"/>
@@ -24,7 +19,17 @@
         <property name="password" value="${jdbc.password:}"/>
     </bean>
 
-    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    <!--
+        Flyway 마이그레이션을 기동 시점에 실행한다. 실패하면(DB 미기동 포함)
+        컨텍스트 로딩이 중단되어 앱이 뜨지 않는다 — 스키마가 안 맞는 코드가
+        서비스되는 것을 막기 위한 의도적인 fail-fast다.
+    -->
+    <bean id="flywayMigrator" class="com.roommade.global.config.FlywayMigrator" init-method="migrate" depends-on="dataSource">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="locations" value="classpath:db/migration"/>
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" depends-on="flywayMigrator">
         <property name="dataSource" ref="dataSource"/>
         <property name="mapperLocations" value="classpath:mapper/**/*.xml"/>
     </bean>
