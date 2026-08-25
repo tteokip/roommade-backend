@@ -35,6 +35,10 @@ dependencies {
     // JDBC / DB
     runtimeOnly 'com.mysql:mysql-connector-j:8.4.0'
 
+    // Flyway (DB 스키마 마이그레이션)
+    implementation 'org.flywaydb:flyway-core:13.3.0'
+    runtimeOnly 'org.flywaydb:flyway-mysql:13.3.0'
+
     // Servlet / JSON
     providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'

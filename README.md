@@ -10,6 +10,7 @@
 - Gradle
 - Tomcat (로컬 구동: Gretty 플러그인)
 - MySQL (Docker Compose로 로컬 개발 환경 구성)
+- Flyway (DB 스키마 마이그레이션)
 - Lombok
 - Logback
 
@@ -30,6 +31,7 @@ src/main/java/com/roommade/
 
 src/main/resources/
 ├── db.properties.sample   # DB 접속 정보 샘플 (실제 db.properties는 gitignore)
+├── db/migration/           # Flyway 마이그레이션 (V1__xxx.sql, ...)
 ├── logback.xml
 └── mapper/                 # MyBatis XML 매퍼
 
@@ -91,6 +93,12 @@ src/main/webapp/WEB-INF/
    curl http://localhost:8080/health/db
    # {"status":"UP","database":"UP"}
    ```
+
+## DB 스키마 마이그레이션 (Flyway)
+
+- 스키마 변경은 `src/main/resources/db/migration/`에 `V{다음 번호}__{설명}.sql` 파일을 추가하는 방식으로 관리합니다.
+- 이미 적용된 마이그레이션 파일은 수정하지 않고, 항상 새 버전 파일을 추가합니다.
+- 서버 기동 시 자동으로 적용되며, **마이그레이션이 실패하면 서버도 기동되지 않습니다.** DB가 꺼져 있는 상태로는 서버를 띄울 수 없으니, 반드시 `docker compose up -d`로 MySQL을 먼저 켜주세요.
 
 ## MySQL 컨테이너 종료
 
