@@ -18,10 +18,13 @@
 
 ```text
 src/main/java/com/roommade/
-├── domain/                    # 비즈니스 도메인 (도메인 확정 후 추가)
-│   └── {domain}/
+├── domain/                    # 비즈니스 도메인
+│   └── {user, preparation, room, coin, quiz, living, house, policy, financialproduct}/
 │       ├── controller/        # API 진입점
-│       ├── dto/               # 요청·응답 객체
+│       ├── dto/
+│       │   ├── request/       # 요청 객체
+│       │   └── response/      # 응답 객체
+│       ├── exception/         # 도메인 전용 예외
 │       ├── mapper/            # MyBatis 매퍼 인터페이스
 │       └── service/           # 비즈니스 로직
 └── global/
