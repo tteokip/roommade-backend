@@ -12,11 +12,14 @@
 
     <context:property-placeholder location="classpath:db.properties" ignore-resource-not-found="true"/>
 
-    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
         <property name="driverClassName" value="${jdbc.driver:com.mysql.cj.jdbc.Driver}"/>
-        <property name="url" value="${jdbc.url:jdbc:mysql://localhost:3306/roommade}"/>
+        <property name="jdbcUrl" value="${jdbc.url:jdbc:mysql://localhost:3306/roommade}"/>
         <property name="username" value="${jdbc.username:root}"/>
         <property name="password" value="${jdbc.password:}"/>
+        <property name="maximumPoolSize" value="${jdbc.pool.maximum-pool-size:10}"/>
+        <property name="minimumIdle" value="${jdbc.pool.minimum-idle:2}"/>
+        <property name="connectionTimeout" value="${jdbc.pool.connection-timeout-ms:30000}"/>
     </bean>
 
     <!--
@@ -31,7 +34,7 @@
 
     <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" depends-on="flywayMigrator">
         <property name="dataSource" ref="dataSource"/>
-        <property name="mapperLocations" value="classpath:mapper/**/*.xml"/>
+        <property name="mapperLocations" value="classpath*:mapper/**/*.xml"/>
     </bean>
 
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
@@ -48,6 +51,7 @@
 
     <context:component-scan base-package="com.roommade">
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
     </context:component-scan>
 
 </beans>

@@ -14,6 +14,13 @@
 - Lombok
 - Logback
 
+## 공통 API 규약
+
+- 모든 도메인 API는 `ApiResponse<T>`를 사용해 `success`, `code`, `message`, `data`를 일관되게 반환합니다.
+- 예상 가능한 도메인 오류는 `BusinessException`과 도메인별 `ErrorCode`로 처리합니다.
+- `@Valid` 검증 오류, 잘못된 JSON, 처리되지 않은 예외는 `GlobalExceptionHandler`가 공통 응답 형식으로 변환합니다.
+- 데이터소스는 HikariCP를 사용하고, DB 마이그레이션은 Flyway가 애플리케이션 기동 시 실행합니다.
+
 ## 디렉터리 구조
 
 ```text
