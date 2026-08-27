@@ -1,6 +1,5 @@
 package com.roommade.global.response;
 
-import com.roommade.global.exception.CommonErrorCode;
 import com.roommade.global.exception.ErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,19 +13,21 @@ public class ApiResponse<T> {
     private final String message;
     private final T data;
 
-    public static <T> ApiResponse<T> success(T data) {
-        return success(CommonErrorCode.SUCCESS, data);
+    public static ApiResponse<Void> success(SuccessCode successCode) {
+        return success(successCode, null);
     }
 
-    public static <T> ApiResponse<T> success(ErrorCode errorCode, T data) {
-        return new ApiResponse<>(true, errorCode.getCode(), errorCode.getMessage(), data);
+    public static <T> ApiResponse<T> success(SuccessCode successCode, T data) {
+        return new ApiResponse<>(true, successCode.getCode(), successCode.getMessage(), data);
     }
 
-    public static <T> ApiResponse<T> error(ErrorCode errorCode) {
-        return error(errorCode, null);
+    public static ApiResponse<Void> error(ErrorCode errorCode) {
+        return new ApiResponse<>(false, errorCode.getCode(), errorCode.getMessage(), null);
     }
 
-    public static <T> ApiResponse<T> error(ErrorCode errorCode, T data) {
+    public static ApiResponse<ValidationErrorData> validationError(
+            ErrorCode errorCode,
+            ValidationErrorData data) {
         return new ApiResponse<>(false, errorCode.getCode(), errorCode.getMessage(), data);
     }
 }
