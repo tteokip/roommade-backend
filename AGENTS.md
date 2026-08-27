@@ -80,7 +80,7 @@ Service는 인터페이스와 구현체로 분리한다.
 ## 5. 응답 포맷 / 예외 처리
 
 `/api` 아래 응답은 `ApiResponse<T>`로 통일하며 `success`, `code`, `message`, `data`를 포함한다. 실패 응답의
-`data`는 기본적으로 `null`이고, 검증 실패일 때만 `errors`를 추가한다.
+`data`는 기본적으로 `null`이며, 검증 실패 시에는 `data.errors`에 필드별 오류를 담는다.
 
 비즈니스 규칙 위반은 공통 `BusinessException`으로 표현하고, 오류 종류는 예외 클래스를 늘리지 않고 도메인별
 `{도메인}ErrorCode` enum 상수로 구분한다. 성공 코드도 도메인별 `{도메인}SuccessCode` enum으로 관리한다.
