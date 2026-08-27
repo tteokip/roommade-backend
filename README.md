@@ -17,7 +17,8 @@
 ## 공통 API 규약
 
 - 모든 도메인 API는 `ApiResponse<T>`를 사용해 `success`, `code`, `message`, `data`를 일관되게 반환합니다.
-- 예상 가능한 도메인 오류는 `BusinessException`과 도메인별 `ErrorCode`로 처리합니다.
+- 성공 응답은 도메인별 `SuccessCode`, 예상 가능한 도메인 오류는 `BusinessException`과 도메인별 `ErrorCode`로
+  처리합니다.
 - `@Valid` 검증 오류, 잘못된 JSON, 처리되지 않은 예외는 `GlobalExceptionHandler`가 공통 응답 형식으로 변환합니다.
 - 데이터소스는 HikariCP를 사용하고, DB 마이그레이션은 Flyway가 애플리케이션 기동 시 실행합니다.
 
@@ -28,10 +29,10 @@ src/main/java/com/roommade/
 ├── domain/                    # 비즈니스 도메인
 │   └── {user, preparation, room, coin, quiz, living, house, policy, financialproduct}/
 │       ├── controller/        # API 진입점
+│       ├── code/              # 도메인 성공·오류 코드
 │       ├── dto/
 │       │   ├── request/       # 요청 객체
 │       │   └── response/      # 응답 객체
-│       ├── exception/         # 도메인 전용 예외
 │       ├── mapper/            # MyBatis 매퍼 인터페이스
 │       └── service/           # 비즈니스 로직
 └── global/

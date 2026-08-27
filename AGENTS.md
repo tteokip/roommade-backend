@@ -38,9 +38,10 @@ Spring Boot가 아니라 순수 Spring Framework(5.3.x) MVC를 WAR로 패키징�
 ## 2. 패키지 / 도메인 구조
 
 도메인은 `user`, `preparation`, `room`, `coin`, `quiz`, `living`, `house`, `policy`, `financialproduct` 9개이며
-(전체 트리는 README.md 참고), 각 도메인은 `controller` / `service` / `mapper` / `dto/{request,response}` /
-`exception`으로 나눈다. `global/common`(공통 기능) · `global/config`(공통 설정) · `global/exception`(공통 예외)은
-특정 도메인에 속하지 않는 코드 전용이며, 도메인 패키지로 옮기지 않는다.
+(전체 트리는 README.md 참고), 각 도메인은 `controller` / `service` / `mapper` / `dto/{request,response}` / `code`로
+나눈다. `code`에는 도메인별 `{도메인}ErrorCode`와 `{도메인}SuccessCode`를 함께 둔다.
+`global/common`(공통 기능) · `global/config`(공통 설정) · `global/exception`(공통 예외)은 특정 도메인에 속하지
+않는 코드 전용이며, 도메인 패키지로 옮기지 않는다.
 
 첫 도메인을 구현하고 검증한 뒤, 그 구조와 공통 패턴을 이후 도메인의 참조 구현으로 사용한다.
 
