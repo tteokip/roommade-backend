@@ -62,6 +62,20 @@ dependencies {
     // Logging
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.slf4j:jcl-over-slf4j:2.0.13'
+
+    // Test
+    testImplementation "org.springframework:spring-test:${springVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.12.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.12.0'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'com.jayway.jsonpath:json-path:2.9.0'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
 }
 
 gretty {
