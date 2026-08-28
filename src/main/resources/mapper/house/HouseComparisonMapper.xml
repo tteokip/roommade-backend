@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.house.mapper.HouseComparisonMapper">
+
+    <resultMap id="houseResultMap" type="com.roommade.domain.house.dto.response.HouseResponse">
+        <id property="id" column="id"/>
+        <result property="location" column="location"/>
+        <result property="deposit" column="deposit"/>
+        <result property="monthlyRent" column="monthly_rent"/>
+        <result property="maintenanceFee" column="maintenance_fee"/>
+        <result property="area" column="area"/>
+        <result property="stationWalkMinutes" column="station_walk_minutes"/>
+        <result property="commuteMinutes" column="commute_minutes"/>
+        <result property="floorType" column="floor_type"/>
+        <result property="roomStructure" column="room_structure"/>
+        <result property="optionType" column="option_type"/>
+    </resultMap>
+
+    <resultMap id="houseComparisonCurrentResultMap"
+               type="com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse">
+        <id property="comparisonId" column="comparison_id"/>
+        <result property="balanceGameAvailable" column="balance_game_available"/>
+        <association property="houseA" resultMap="houseResultMap" columnPrefix="house_a_" notNullColumn="id"/>
+        <association property="houseB" resultMap="houseResultMap" columnPrefix="house_b_" notNullColumn="id"/>
+    </resultMap>
+
+    <!--
+        house_comparisons.user_id는 UNIQUE라 사용자당 최대 1건이다. 그 1건을 houses와 house_type
+        기준으로 A/B 각각 LEFT JOIN한다. status로 필터링하지 않는다(완료된 비교도 포함).
+    -->
+    <select id="findCurrentByUserId" resultMap="houseComparisonCurrentResultMap">
+        SELECT
+            hc.id AS comparison_id,
+            ha.id AS house_a_id,
+            ha.location AS house_a_location,
+            ha.deposit AS house_a_deposit,
+            ha.monthly_rent AS house_a_monthly_rent,
+            ha.maintenance_fee AS house_a_maintenance_fee,
+            ha.area AS house_a_area,
+            ha.station_walk_minutes AS house_a_station_walk_minutes,
+            ha.commute_minutes AS house_a_commute_minutes,
+            ha.floor_type AS house_a_floor_type,
+            ha.room_structure AS house_a_room_structure,
+            ha.option_type AS house_a_option_type,
+            hb.id AS house_b_id,
+            hb.location AS house_b_location,
+            hb.deposit AS house_b_deposit,
+            hb.monthly_rent AS house_b_monthly_rent,
+            hb.maintenance_fee AS house_b_maintenance_fee,
+            hb.area AS house_b_area,
+            hb.station_walk_minutes AS house_b_station_walk_minutes,
+            hb.commute_minutes AS house_b_commute_minutes,
+            hb.floor_type AS house_b_floor_type,
+            hb.room_structure AS house_b_room_structure,
+            hb.option_type AS house_b_option_type,
+            CASE WHEN ha.id IS NOT NULL AND hb.id IS NOT NULL THEN 1 ELSE 0 END AS balance_game_available
+        FROM house_comparisons hc
+        LEFT JOIN houses ha ON ha.comparison_id = hc.id AND ha.house_type = 'A'
+        LEFT JOIN houses hb ON hb.comparison_id = hc.id AND hb.house_type = 'B'
+        WHERE hc.user_id = #{userId}
+    </select>
+
+</mapper>
