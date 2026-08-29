@@ -17,3 +17,18 @@ jdbc.password=roommade1234
 jdbc.pool.maximum-pool-size=10
 jdbc.pool.minimum-idle=2
 jdbc.pool.connection-timeout-ms=30000
+
+# 금융감독원 금융상품 통합비교공시 API
+fss.api.base-url=${FSS_API_BASE_URL:https://finlife.fss.or.kr}
+fss.api.auth=${FSS_API_KEY}
+fss.api.deposit-path=${FSS_DEPOSIT_PATH:/finlifeapi/depositProductsSearch.json}
+fss.api.saving-path=${FSS_SAVING_PATH:/finlifeapi/savingProductsSearch.json}
+fss.api.top-fin-grp-no=${FSS_TOP_FIN_GRP_NO:020000}
+fss.api.financial-company-code=${FSS_FINANCIAL_COMPANY_CODE:0010927}
+fss.api.sync-cron=0 0 3 * * *
+
+# 온통 청년 Youth Policy API
+youth-policy.api.base-url=${YOUTH_POLICY_API_BASE_URL:https://www.youthcenter.go.kr}
+youth-policy.api.policy-path=${YOUTH_POLICY_PATH:/go/ythip/getPlcy}
+youth-policy.api.key=${YOUTH_POLICY_API_KEY}
+youth-policy.api.page-size=${YOUTH_POLICY_PAGE_SIZE:10}
