@@ -1,22 +1,33 @@
 package com.roommade.domain.house.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup;
 
+import com.roommade.domain.house.code.HouseErrorCode;
+import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
 import com.roommade.domain.house.dto.response.HouseResponse;
 import com.roommade.domain.house.service.HouseComparisonService;
+import com.roommade.global.exception.BusinessException;
 import com.roommade.global.exception.GlobalExceptionHandler;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,5 +77,74 @@ class HouseComparisonControllerTest {
                 .andExpect(jsonPath("$.data.houseA").doesNotExist())
                 .andExpect(jsonPath("$.data.houseB").doesNotExist())
                 .andExpect(jsonPath("$.data.balanceGameAvailable").value(false));
+    }
+
+    @Test
+    @DisplayName("JSON 요청 바디를 HouseRegisterRequest로 바인딩해 등록하고 201을 반환한다")
+    void registersHouseFromJsonRequestBody() throws Exception {
+        String requestBody = "{"
+                + "\"location\":\"서울시 강남구\","
+                + "\"deposit\":10000,"
+                + "\"monthlyRent\":50,"
+                + "\"maintenanceFee\":5,"
+                + "\"area\":29.75,"
+                + "\"stationWalkMinutes\":10,"
+                + "\"commuteMinutes\":30,"
+                + "\"floorType\":\"고층\","
+                + "\"roomStructure\":\"원룸\","
+                + "\"optionType\":\"풀옵션\"}";
+        when(houseComparisonService.registerHouse(eq(USER_ID), eq("A"), any()))
+                .thenReturn(new HouseComparisonCurrentResponse(1L, null, null, false));
+
+        mockMvc.perform(post("/api/house-comparisons/current/houses/A")
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("HOUSE_002"));
+
+        ArgumentCaptor<HouseRegisterRequest> captor = ArgumentCaptor.forClass(HouseRegisterRequest.class);
+        verify(houseComparisonService).registerHouse(eq(USER_ID), eq("A"), captor.capture());
+        HouseRegisterRequest captured = captor.getValue();
+        assertThat(captured.getLocation()).isEqualTo("서울시 강남구");
+        assertThat(captured.getDeposit()).isEqualTo(10000L);
+        assertThat(captured.getMonthlyRent()).isEqualTo(50L);
+        assertThat(captured.getMaintenanceFee()).isEqualTo(5L);
+        assertThat(captured.getArea()).isEqualByComparingTo(new BigDecimal("29.75"));
+        assertThat(captured.getStationWalkMinutes()).isEqualTo(10);
+        assertThat(captured.getCommuteMinutes()).isEqualTo(30);
+        assertThat(captured.getFloorType()).isEqualTo("고층");
+        assertThat(captured.getRoomStructure()).isEqualTo("원룸");
+        assertThat(captured.getOptionType()).isEqualTo("풀옵션");
+    }
+
+    @Test
+    @DisplayName("location/deposit/monthlyRent가 없으면 400을 반환하고 Service를 호출하지 않는다")
+    void returnsBadRequestWhenRequiredFieldsAreMissing() throws Exception {
+        mockMvc.perform(post("/api/house-comparisons/current/houses/A")
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verifyNoInteractions(houseComparisonService);
+    }
+
+    @Test
+    @DisplayName("Service가 슬롯 중복 예외를 던지면 409를 반환한다")
+    void returnsConflictWhenSlotAlreadyOccupied() throws Exception {
+        String requestBody = "{\"location\":\"서울시\",\"deposit\":1000,\"monthlyRent\":10}";
+        when(houseComparisonService.registerHouse(eq(USER_ID), eq("A"), any()))
+                .thenThrow(new BusinessException(HouseErrorCode.HOUSE_SLOT_ALREADY_OCCUPIED));
+
+        mockMvc.perform(post("/api/house-comparisons/current/houses/A")
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value("HOUSE_004"));
     }
 }
