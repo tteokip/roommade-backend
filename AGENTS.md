@@ -128,9 +128,9 @@ Controller에 붙여도 걸리지 않는다.
 
 ## 9. 환경 설정
 
-로컬 전용 값은 `.env`(docker compose용, 샘플 `.env.sample`)와 `src/main/resources/db.properties`(앱 DataSource용,
-샘플 `db.properties.sample`) 두 파일로 나뉘며 둘 다 커밋하지 않는다(README 참고). **비밀값은 어떤 파일에도
-커밋하지 않는다.**
+로컬 전용 값은 `.env`(docker compose 및 로컬 외부 API 키 전달용, 샘플 `.env.sample`)와
+`src/main/resources/db.properties`(앱 DataSource용, 샘플 `db.properties.sample`) 두 파일로 나뉘며 둘 다
+커밋하지 않는다(README 참고). **비밀값은 어떤 파일에도 커밋하거나 WAR에 포함하지 않는다.**
 
 ---
 

@@ -79,6 +79,16 @@ src/main/webapp/WEB-INF/
 
    `.env`의 포트·계정·DB명을 바꿨다면 `db.properties`도 함께 맞춰주세요.
 
+   매물 이미지 분석 API를 사용하려면 `.env`의 `OPENAI_API_KEY`를 입력합니다. 비워두어도
+   빌드와 서버 기동은 가능하며, 분석 API 호출만 실패합니다.
+
+   ```env
+   OPENAI_API_KEY=발급받은 키
+   ```
+
+   로컬 `appRun`은 이 값을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
+   시크릿으로 주입하며, 실제 키는 Git 추적 파일에 넣지 않습니다.
+
 4. Docker로 로컬 MySQL을 띄우고, 정상 기동(`healthy`)될 때까지 기다립니다.
 
    ```bash

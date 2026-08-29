@@ -54,12 +54,7 @@
     <tx:annotation-driven transaction-manager="transactionManager"/>
     <task:annotation-driven/>
 
-    <!--
-        API 키는 OPENAI_API_KEY 환경변수에서 읽는다(fromEnv) — 코드/설정 파일에 실값을 두지 않는다.
-        lazy-init: 키가 없으면 fromEnv()가 즉시 예외를 던지는데, 이 빈이 즉시(eager) 생성되면
-        OpenAI를 안 쓰는 다른 기능(테스트 포함)까지 컨텍스트 로딩 자체가 막힌다. 실제로 매물 분석
-        API가 호출될 때(OpenAiHouseImageAnalysisClient의 @Lazy 주입 시점)만 생성한다.
-    -->
+    <!-- API 키가 없어도 다른 기능은 기동되도록 지연 생성한다. -->
     <bean id="openAiClient" class="com.openai.client.okhttp.OpenAIOkHttpClient"
           factory-method="fromEnv" lazy-init="true"/>
 
