@@ -52,7 +52,8 @@ class HouseComparisonControllerTest {
     @DisplayName("houseA만 있는 비교 결과를 success=true, comparisonId·houseA 포함 JSON으로 반환하고 houseB는 응답에서 빠진다")
     void returnsCurrentComparisonAsApiResponse() throws Exception {
         HouseResponse houseA = new HouseResponse(
-                10L, "서울시 강남구", 10000L, 50L, 5L, null, null, null, null, null, null);
+                10L, "서울시 강남구", 100_000_000L, 500_000L, 50_000L,
+                null, null, null, null, null, null);
         when(houseComparisonService.getCurrentComparison(eq(USER_ID)))
                 .thenReturn(new HouseComparisonCurrentResponse(1L, houseA, null, false));
 
@@ -84,9 +85,9 @@ class HouseComparisonControllerTest {
     void registersHouseFromJsonRequestBody() throws Exception {
         String requestBody = "{"
                 + "\"location\":\"서울시 강남구\","
-                + "\"deposit\":10000,"
-                + "\"monthlyRent\":50,"
-                + "\"maintenanceFee\":5,"
+                + "\"deposit\":100000000,"
+                + "\"monthlyRent\":500000,"
+                + "\"maintenanceFee\":50000,"
                 + "\"area\":29.75,"
                 + "\"stationWalkMinutes\":10,"
                 + "\"commuteMinutes\":30,"
@@ -108,9 +109,9 @@ class HouseComparisonControllerTest {
         verify(houseComparisonService).registerHouse(eq(USER_ID), eq("A"), captor.capture());
         HouseRegisterRequest captured = captor.getValue();
         assertThat(captured.getLocation()).isEqualTo("서울시 강남구");
-        assertThat(captured.getDeposit()).isEqualTo(10000L);
-        assertThat(captured.getMonthlyRent()).isEqualTo(50L);
-        assertThat(captured.getMaintenanceFee()).isEqualTo(5L);
+        assertThat(captured.getDeposit()).isEqualTo(100_000_000L);
+        assertThat(captured.getMonthlyRent()).isEqualTo(500_000L);
+        assertThat(captured.getMaintenanceFee()).isEqualTo(50_000L);
         assertThat(captured.getArea()).isEqualByComparingTo(new BigDecimal("29.75"));
         assertThat(captured.getStationWalkMinutes()).isEqualTo(10);
         assertThat(captured.getCommuteMinutes()).isEqualTo(30);
@@ -135,7 +136,7 @@ class HouseComparisonControllerTest {
     @Test
     @DisplayName("Service가 슬롯 중복 예외를 던지면 409를 반환한다")
     void returnsConflictWhenSlotAlreadyOccupied() throws Exception {
-        String requestBody = "{\"location\":\"서울시\",\"deposit\":1000,\"monthlyRent\":10}";
+        String requestBody = "{\"location\":\"서울시\",\"deposit\":10000000,\"monthlyRent\":100000}";
         when(houseComparisonService.registerHouse(eq(USER_ID), eq("A"), any()))
                 .thenThrow(new BusinessException(HouseErrorCode.HOUSE_SLOT_ALREADY_OCCUPIED));
 
