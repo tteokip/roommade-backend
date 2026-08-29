@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum HouseSuccessCode implements SuccessCode {
 
     HOUSE_COMPARISON_CURRENT_FOUND(HttpStatus.OK, "HOUSE_001", "현재 집 비교를 조회했습니다."),
-    HOUSE_REGISTERED(HttpStatus.CREATED, "HOUSE_002", "매물을 등록했습니다.");
+    HOUSE_REGISTERED(HttpStatus.CREATED, "HOUSE_002", "매물을 등록했습니다."),
+    HOUSE_ANALYZED(HttpStatus.OK, "HOUSE_005", "매물 이미지 분석에 성공했습니다.");
 
     private final HttpStatus status;
     private final String code;

@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @Slf4j
 @RestControllerAdvice
@@ -36,6 +37,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUnreadableMessage(
             HttpMessageNotReadableException exception) {
         return ResponseEntity.badRequest().body(ApiResponse.error(CommonErrorCode.INVALID_REQUEST));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceeded(
+            MaxUploadSizeExceededException exception) {
+        return ResponseEntity.status(CommonErrorCode.REQUEST_TOO_LARGE.getStatus())
+                .body(ApiResponse.error(CommonErrorCode.REQUEST_TOO_LARGE));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

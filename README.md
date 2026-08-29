@@ -11,6 +11,7 @@
 - Tomcat (로컬 구동: Gretty 플러그인)
 - MySQL (Docker Compose로 로컬 개발 환경 구성)
 - Flyway (DB 스키마 마이그레이션)
+- OpenAI Java SDK (매물 이미지 정보 추출)
 - Lombok
 - Logback
 
@@ -28,6 +29,7 @@
 src/main/java/com/roommade/
 ├── domain/                    # 비즈니스 도메인
 │   └── {user, preparation, room, coin, quiz, living, house, policy, financialproduct}/
+│       ├── client/            # 외부 API 연동이 필요한 도메인에서만 사용
 │       ├── controller/        # API 진입점
 │       ├── code/              # 도메인 성공·오류 코드
 │       ├── dto/
