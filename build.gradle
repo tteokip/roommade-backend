@@ -64,6 +64,9 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.slf4j:jcl-over-slf4j:2.0.13'
 
+    // OpenAI
+    implementation 'com.openai:openai-java:4.54.0'
+
     // Test
     testImplementation "org.springframework:spring-test:${springVersion}"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
@@ -83,4 +86,25 @@ gretty {
     contextPath = '/'
     servletContainer = 'tomcat9'
     httpPort = 8080
+}
+
+// 로컬 appRun에서만 .env의 키를 서버 JVM에 전달하며, 운영체제 환경 변수를 우선한다.
+if (!System.getenv('OPENAI_API_KEY')) {
+    def dotEnvFile = file("${rootDir}/.env")
+    if (dotEnvFile.exists()) {
+        def openAiKeyFromDotEnv = null
+        dotEnvFile.eachLine { line ->
+            def trimmed = line.trim()
+            if (trimmed.startsWith('OPENAI_API_KEY=')) {
+                openAiKeyFromDotEnv = trimmed.substring('OPENAI_API_KEY='.length()).trim()
+            }
+        }
+        if (openAiKeyFromDotEnv) {
+            afterEvaluate {
+                tasks.named('appRun').configure {
+                    systemProperty('openai.apiKey', openAiKeyFromDotEnv)
+                }
+            }
+        }
+    }
 }

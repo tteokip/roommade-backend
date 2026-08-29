@@ -11,6 +11,7 @@
 - Tomcat (로컬 구동: Gretty 플러그인)
 - MySQL (Docker Compose로 로컬 개발 환경 구성)
 - Flyway (DB 스키마 마이그레이션)
+- OpenAI Java SDK (매물 이미지 정보 추출)
 - Lombok
 - Logback
 
@@ -28,6 +29,7 @@
 src/main/java/com/roommade/
 ├── domain/                    # 비즈니스 도메인
 │   └── {user, preparation, room, coin, quiz, living, house, policy, financialproduct}/
+│       ├── client/            # 외부 API 연동이 필요한 도메인에서만 사용
 │       ├── controller/        # API 진입점
 │       ├── code/              # 도메인 성공·오류 코드
 │       ├── dto/
@@ -76,6 +78,16 @@ src/main/webapp/WEB-INF/
    | `cp src/main/resources/db.properties.sample src/main/resources/db.properties` | `copy src\main\resources\db.properties.sample src\main\resources\db.properties` | `Copy-Item src\main\resources\db.properties.sample src\main\resources\db.properties` |
 
    `.env`의 포트·계정·DB명을 바꿨다면 `db.properties`도 함께 맞춰주세요.
+
+   매물 이미지 분석 API를 사용하려면 `.env`의 `OPENAI_API_KEY`를 입력합니다. 비워두어도
+   빌드와 서버 기동은 가능하며, 분석 API 호출만 실패합니다.
+
+   ```env
+   OPENAI_API_KEY=발급받은 키
+   ```
+
+   로컬 `appRun`은 이 값을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
+   시크릿으로 주입하며, 실제 키는 Git 추적 파일에 넣지 않습니다.
 
 4. Docker로 로컬 MySQL을 띄우고, 정상 기동(`healthy`)될 때까지 기다립니다.
 

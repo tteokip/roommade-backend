@@ -64,7 +64,7 @@ class HouseComparisonServiceImplTest {
     void createsComparisonWhenNoneExistsThenRegistersHouse() {
         Long userId = 1L;
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시 강남구", 10_000L, 50L, null, null, null, null, null, null, null);
+                "서울시 강남구", 100_000_000L, 500_000L, null, null, null, null, null, null, null);
         HouseComparisonCurrentResponse afterCreate = new HouseComparisonCurrentResponse(100L, null, null, false);
         HouseComparisonCurrentResponse finalResponse = new HouseComparisonCurrentResponse(100L, null, null, false);
 
@@ -105,7 +105,7 @@ class HouseComparisonServiceImplTest {
     void throwsExceptionWhenHouseTypeIsInvalid() {
         Long userId = 1L;
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시", 1000L, 10L, null, null, null, null, null, null, null);
+                "서울시", 10_000_000L, 100_000L, null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> houseComparisonService.registerHouse(userId, "C", request))
                 .isInstanceOf(BusinessException.class)
@@ -120,7 +120,7 @@ class HouseComparisonServiceImplTest {
     void throwsHouseSlotAlreadyOccupiedWhenInsertHouseViolatesUniqueConstraint() {
         Long userId = 1L;
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시", 1000L, 10L, null, null, null, null, null, null, null);
+                "서울시", 10_000_000L, 100_000L, null, null, null, null, null, null, null);
         HouseComparisonCurrentResponse existing = new HouseComparisonCurrentResponse(300L, null, null, false);
 
         when(houseComparisonMapper.findCurrentByUserId(userId)).thenReturn(existing);

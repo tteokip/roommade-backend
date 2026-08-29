@@ -62,6 +62,9 @@ Spring Boot가 아니라 순수 Spring Framework(5.3.x) MVC를 WAR로 패키징�
 
 Service는 인터페이스와 구현체로 분리한다.
 
+외부 API 연동이 필요한 도메인은 `client` 패키지에 연동 코드를 두고, 외부 SDK 타입과 호출 세부사항을
+그 내부에 한정한다. 공급자 교체나 단위 테스트 경계가 필요하면 인터페이스와 구현체를 분리한다.
+
 ---
 
 ## 4. DTO 규칙
@@ -125,9 +128,9 @@ Controller에 붙여도 걸리지 않는다.
 
 ## 9. 환경 설정
 
-로컬 전용 값은 `.env`(docker compose용, 샘플 `.env.sample`)와 `src/main/resources/db.properties`(앱 DataSource용,
-샘플 `db.properties.sample`) 두 파일로 나뉘며 둘 다 커밋하지 않는다(README 참고). **비밀값은 어떤 파일에도
-커밋하지 않는다.**
+로컬 전용 값은 `.env`(docker compose 및 로컬 외부 API 키 전달용, 샘플 `.env.sample`)와
+`src/main/resources/db.properties`(앱 DataSource용, 샘플 `db.properties.sample`) 두 파일로 나뉘며 둘 다
+커밋하지 않는다(README 참고). **비밀값은 어떤 파일에도 커밋하거나 WAR에 포함하지 않는다.**
 
 ---
 
