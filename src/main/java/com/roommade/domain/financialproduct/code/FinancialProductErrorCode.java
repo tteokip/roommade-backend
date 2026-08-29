@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum FinancialProductErrorCode implements ErrorCode {
-    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "FINANCIAL_PRODUCT_001", "금융상품을 찾을 수 없습니다.");
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "FINANCIAL_PRODUCT_003", "금융상품을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;
