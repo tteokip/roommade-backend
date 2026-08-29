@@ -11,6 +11,7 @@ import java.util.Set;
 final class YouthPolicyRegionResolver {
     private static final Map<String, String> REGION_NAMES = createRegionNames();
     private static final Map<String, String> REGION_CODE_ALIASES = Map.of("51", "42", "52", "45");
+    private static final Map<String, String> REGION_CODES_BY_NAME = createRegionCodesByName();
 
     private YouthPolicyRegionResolver() {
     }
@@ -42,6 +43,17 @@ final class YouthPolicyRegionResolver {
         return regions;
     }
 
+    static String resolveRegionCode(String region) {
+        if (region == null || region.isBlank()) {
+            return null;
+        }
+        String normalizedRegion = region.trim();
+        if (REGION_NAMES.containsKey(normalizedRegion)) {
+            return normalizedRegion;
+        }
+        return REGION_CODES_BY_NAME.get(normalizedRegion);
+    }
+
     private static Map<String, String> createRegionNames() {
         Map<String, String> regionNames = new LinkedHashMap<>();
         regionNames.put("11", "서울특별시"); regionNames.put("26", "부산광역시");
@@ -54,5 +66,15 @@ final class YouthPolicyRegionResolver {
         regionNames.put("47", "경상북도"); regionNames.put("48", "경상남도");
         regionNames.put("50", "제주특별자치도");
         return Map.copyOf(regionNames);
+    }
+
+    private static Map<String, String> createRegionCodesByName() {
+        Map<String, String> regionCodes = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : REGION_NAMES.entrySet()) {
+            regionCodes.put(entry.getValue(), entry.getKey());
+        }
+        regionCodes.put("강원도", "42");
+        regionCodes.put("전라북도", "45");
+        return Map.copyOf(regionCodes);
     }
 }
