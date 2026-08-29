@@ -119,7 +119,7 @@ Controller에 붙여도 걸리지 않는다.
   **이미 적용된 마이그레이션 파일은 절대 수정하지 않는다** — 고치면 Flyway가 checksum 불일치로 기동을 막는다.
 - 마이그레이션 실패(DB 미기동 포함) 시 앱이 기동되지 않는 fail-fast 구조다. 로컬 DB를 초기화해야 하면
   `docker compose down -v && docker compose up -d`를 쓰되, **볼륨 삭제는 사용자 승인 후 실행한다.**
-- 금액 컬럼은 자바에서 `BigDecimal`로 다룬다(`double`/`float` 금지).
+- 금액 컬럼은 자바에서 `Long`으로 다룬다(`double`/`float` 금지).
 
 ---
 
