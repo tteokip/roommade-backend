@@ -1,14 +1,18 @@
 package com.roommade.domain.house.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,6 +134,48 @@ class HouseComparisonMapperTest {
 
         assertThat(result.getHouseA().getLocation()).isEqualTo("매물 A");
         assertThat(result.getHouseB().getLocation()).isEqualTo("매물 B");
+    }
+
+    @Test
+    @DisplayName("insertComparison과 insertHouse로 등록한 매물이 findCurrentByUserId에서 조회된다")
+    void insertComparisonAndInsertHouseArePersistedTogether() {
+        insertUser(910_010L);
+
+        houseComparisonMapper.insertComparison(910_010L);
+        Long comparisonId = houseComparisonMapper.findCurrentByUserId(910_010L).getComparisonId();
+
+        HouseRegisterRequest request = new HouseRegisterRequest(
+                "서울시 종로구", 20_000L, 60L, 3L, new BigDecimal("25.50"), 5, 20, "저층", "투룸", "냉장고");
+        houseComparisonMapper.insertHouse(comparisonId, "A", request);
+
+        HouseComparisonCurrentResponse result = houseComparisonMapper.findCurrentByUserId(910_010L);
+
+        assertThat(result.getComparisonId()).isEqualTo(comparisonId);
+        assertThat(result.getHouseA().getLocation()).isEqualTo("서울시 종로구");
+        assertThat(result.getHouseA().getDeposit()).isEqualTo(20_000L);
+        assertThat(result.getHouseA().getMonthlyRent()).isEqualTo(60L);
+        assertThat(result.getHouseA().getMaintenanceFee()).isEqualTo(3L);
+        assertThat(result.getHouseA().getArea()).isEqualByComparingTo(new BigDecimal("25.50"));
+        assertThat(result.getHouseA().getStationWalkMinutes()).isEqualTo(5);
+        assertThat(result.getHouseA().getCommuteMinutes()).isEqualTo(20);
+        assertThat(result.getHouseA().getFloorType()).isEqualTo("저층");
+        assertThat(result.getHouseA().getRoomStructure()).isEqualTo("투룸");
+        assertThat(result.getHouseA().getOptionType()).isEqualTo("냉장고");
+        assertThat(result.getHouseB()).isNull();
+    }
+
+    @Test
+    @DisplayName("같은 비교의 같은 슬롯에 매물을 두 번 등록하면 (comparison_id, house_type) UNIQUE 위반이 난다")
+    void insertHouseTwiceForSameSlotViolatesUniqueConstraint() {
+        insertUser(910_012L);
+        insertComparison(920_012L, 910_012L, LocalDateTime.now());
+        HouseRegisterRequest request = new HouseRegisterRequest(
+                "서울시 서초구", 15_000L, 40L, null, null, null, null, null, null, null);
+
+        houseComparisonMapper.insertHouse(920_012L, "A", request);
+
+        assertThatThrownBy(() -> houseComparisonMapper.insertHouse(920_012L, "A", request))
+                .isInstanceOf(DuplicateKeyException.class);
     }
 
     private void insertUser(long id) {

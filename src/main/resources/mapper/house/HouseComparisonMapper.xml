@@ -62,4 +62,19 @@
         WHERE hc.user_id = #{userId}
     </select>
 
+    <insert id="insertComparison">
+        INSERT INTO house_comparisons (user_id) VALUES (#{userId})
+    </insert>
+
+    <insert id="insertHouse">
+        INSERT INTO houses (
+            comparison_id, house_type, location, deposit, monthly_rent, maintenance_fee,
+            area, station_walk_minutes, commute_minutes, floor_type, room_structure, option_type
+        ) VALUES (
+            #{comparisonId}, #{houseType}, #{request.location}, #{request.deposit}, #{request.monthlyRent},
+            #{request.maintenanceFee}, #{request.area}, #{request.stationWalkMinutes}, #{request.commuteMinutes},
+            #{request.floorType}, #{request.roomStructure}, #{request.optionType}
+        )
+    </insert>
+
 </mapper>
