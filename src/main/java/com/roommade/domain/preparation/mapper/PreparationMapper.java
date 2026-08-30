@@ -21,6 +21,14 @@ public interface PreparationMapper {
     /** 사용자 집 확정 완료 시간 조회. */
     LocalDateTime findHouseConfirmedAtByUserId(@Param("userId") Long userId);
 
+    /** 사용자 자립 준비 진행 데이터 존재 여부 조회. */
+    boolean existsIndependenceProgressByUserId(@Param("userId") Long userId);
+
     /** 사용자 최초 비교 매물 등록 완료 시간 기록. */
     int markHouseComparisonCompleted(@Param("userId") Long userId);
+
+    /** 사용자 집 확정 매물 및 완료 시간 기록. */
+    int updateHouseConfirmation(
+            @Param("userId") Long userId,
+            @Param("confirmedHouseId") Long confirmedHouseId);
 }

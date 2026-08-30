@@ -10,6 +10,10 @@ public interface HouseComparisonMapper {
 
     HouseComparisonCurrentResponse findCurrentByUserId(@Param("userId") Long userId);
 
+    boolean existsHouseByIdAndUserId(
+            @Param("houseId") Long houseId,
+            @Param("userId") Long userId);
+
     void insertComparison(@Param("userId") Long userId);
 
     void insertHouse(
