@@ -61,31 +61,34 @@ class EmergencyFundMapperTest {
     }
 
     @Test
-    @DisplayName("achieved_at이 있는 행은 achieved=true로 조회된다")
-    void findsRowWithAchievedAtAsAchieved() {
+    @DisplayName("current_amount가 target_amount 이상이면 achieved_at이 없어도 achieved=true로 조회된다")
+    void findsRowAsAchievedWhenCurrentAmountReachesTarget() {
         insertUser(940_003L);
-        LocalDateTime achievedAt = LocalDateTime.now().withNano(0);
+        emergencyFundMapper.insert(940_003L, 500_000L, null);
+        jdbcTemplate.update(
+                "UPDATE emergency_funds SET current_amount = ? WHERE user_id = ?", 500_000L, 940_003L);
 
-        emergencyFundMapper.insert(940_003L, 500_000L, achievedAt);
         EmergencyFundResponse result = emergencyFundMapper.findByUserId(940_003L);
 
         assertThat(result.isAchieved()).isTrue();
-        assertThat(result.getAchievedAt()).isEqualTo(achievedAt);
+        assertThat(result.getAchievedAt()).isNull();
     }
 
     @Test
-    @DisplayName("updateTarget으로 target_amount와 achieved_at을 갱신한다")
-    void updatesTargetAndAchievedAt() {
+    @DisplayName("achieved_at이 과거에 찍혔어도 current_amount가 새 target_amount에 미달이면 achieved=false로 조회된다")
+    void findsRowAsNotAchievedWhenCurrentAmountBelowTargetDespiteAchievedAt() {
         insertUser(940_004L);
-        emergencyFundMapper.insert(940_004L, 300_000L, null);
-        LocalDateTime achievedAt = LocalDateTime.now().withNano(0);
+        LocalDateTime firstAchievedAt = LocalDateTime.now().withNano(0);
+        emergencyFundMapper.insert(940_004L, 300_000L, firstAchievedAt);
+        jdbcTemplate.update(
+                "UPDATE emergency_funds SET current_amount = ? WHERE user_id = ?", 300_000L, 940_004L);
 
-        emergencyFundMapper.updateTarget(940_004L, 800_000L, achievedAt);
+        emergencyFundMapper.updateTarget(940_004L, 800_000L, firstAchievedAt);
         EmergencyFundResponse result = emergencyFundMapper.findByUserId(940_004L);
 
         assertThat(result.getTargetAmount()).isEqualTo(800_000L);
-        assertThat(result.isAchieved()).isTrue();
-        assertThat(result.getAchievedAt()).isEqualTo(achievedAt);
+        assertThat(result.isAchieved()).isFalse();
+        assertThat(result.getAchievedAt()).isEqualTo(firstAchievedAt);
     }
 
     @Test

@@ -15,7 +15,7 @@
         SELECT
             target_amount,
             current_amount,
-            CASE WHEN achieved_at IS NOT NULL THEN 1 ELSE 0 END AS achieved,
+            CASE WHEN current_amount >= target_amount THEN 1 ELSE 0 END AS achieved,
             achieved_at
         FROM emergency_funds
         WHERE user_id = #{userId}
