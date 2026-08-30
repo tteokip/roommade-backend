@@ -89,24 +89,6 @@
         )
     </insert>
 
-    <update id="increaseCoinBalance">
-        UPDATE coin_wallets
-        SET balance = balance + #{amount},
-            updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = #{userId}
-    </update>
-
-    <insert id="insertCoinWallet">
-        INSERT INTO coin_wallets (user_id, balance)
-        VALUES (#{userId}, #{amount})
-    </insert>
-
-    <select id="findCoinBalanceByUserId" resultType="int">
-        SELECT balance
-        FROM coin_wallets
-        WHERE user_id = #{userId}
-    </select>
-
     <select id="findAttemptHistoryByUserId"
             resultType="com.roommade.domain.quiz.dto.response.QuizAttemptHistoryResponse">
         SELECT uqa.quiz_date,

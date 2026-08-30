@@ -3,13 +3,15 @@ package com.roommade.domain.quiz.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.roommade.domain.coin.dto.response.CoinBalanceResponse;
+import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.quiz.dto.response.QuizAnswerEvaluationResponse;
 import com.roommade.domain.quiz.dto.response.QuizAttemptHistoryResponse;
 import com.roommade.domain.quiz.dto.response.TodayQuizResponse;
@@ -24,7 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class   QuizServiceImplTest {
+class QuizServiceImplTest {
 
     private static final Long USER_ID = 1L;
     private static final Long QUIZ_QUESTION_ID = 10L;
@@ -33,11 +35,14 @@ class   QuizServiceImplTest {
     @Mock
     private QuizMapper quizMapper;
 
+    @Mock
+    private CoinService coinService;
+
     private QuizServiceImpl quizService;
 
     @BeforeEach
     void setUp() {
-        quizService = new QuizServiceImpl(quizMapper);
+        quizService = new QuizServiceImpl(quizMapper, coinService);
     }
 
     @Test
@@ -48,8 +53,7 @@ class   QuizServiceImplTest {
         when(quizMapper.existsAttemptByUserIdAndQuizDate(anyLong(), any())).thenReturn(false);
         when(quizMapper.findAnswerEvaluation(QUIZ_QUESTION_ID, CHOICE_ID))
                 .thenReturn(new QuizAnswerEvaluationResponse(true, "O", "해설"));
-        when(quizMapper.increaseCoinBalance(USER_ID, 50)).thenReturn(1);
-        when(quizMapper.findCoinBalanceByUserId(USER_ID)).thenReturn(150);
+        when(coinService.earn(USER_ID, 50)).thenReturn(150);
         when(quizMapper.findAttemptHistoryByUserId(USER_ID))
                 .thenReturn(List.of(new QuizAttemptHistoryResponse(today, QUIZ_QUESTION_ID, "문제", true, 50)));
 
@@ -60,7 +64,28 @@ class   QuizServiceImplTest {
         assertThat(response.getCurrentStreak()).isEqualTo(1);
         assertThat(response.getCoinBalance()).isEqualTo(150);
         verify(quizMapper).insertAttempt(USER_ID, today, QUIZ_QUESTION_ID, CHOICE_ID, true);
-        verify(quizMapper).increaseCoinBalance(USER_ID, 50);
+        verify(coinService).earn(USER_ID, 50);
+    }
+
+    @Test
+    void submitTodayQuizAnswer_incorrectAnswerKeepsCurrentCoinBalance() {
+        LocalDate today = LocalDate.now();
+        when(quizMapper.findTodayQuiz(any(), anyLong()))
+                .thenReturn(new TodayQuizResponse(today, QUIZ_QUESTION_ID, "OX", "문제", List.of(), false));
+        when(quizMapper.existsAttemptByUserIdAndQuizDate(anyLong(), any())).thenReturn(false);
+        when(quizMapper.findAnswerEvaluation(QUIZ_QUESTION_ID, CHOICE_ID))
+                .thenReturn(new QuizAnswerEvaluationResponse(false, "X", "해설"));
+        when(coinService.getBalance(USER_ID)).thenReturn(new CoinBalanceResponse(100));
+        when(quizMapper.findAttemptHistoryByUserId(USER_ID))
+                .thenReturn(List.of(new QuizAttemptHistoryResponse(today, QUIZ_QUESTION_ID, "문제", false, 0)));
+
+        var response = quizService.submitTodayQuizAnswer(USER_ID, CHOICE_ID);
+
+        assertThat(response.isCorrect()).isFalse();
+        assertThat(response.getEarnedPoint()).isZero();
+        assertThat(response.getCoinBalance()).isEqualTo(100);
+        verify(coinService, never()).earn(anyLong(), anyInt());
+        verify(coinService).getBalance(USER_ID);
     }
 
     @Test
@@ -75,7 +100,7 @@ class   QuizServiceImplTest {
                 .hasMessage("오늘의 퀴즈에 이미 참여했습니다.");
 
         verify(quizMapper, never()).insertAttempt(anyLong(), any(), anyLong(), anyLong(), anyBoolean());
-        verify(quizMapper, never()).increaseCoinBalance(anyLong(), anyInt());
+        verify(coinService, never()).earn(anyLong(), anyInt());
     }
 
     @Test
