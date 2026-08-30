@@ -13,6 +13,7 @@ import com.roommade.domain.house.code.HouseErrorCode;
 import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
 import com.roommade.domain.house.mapper.HouseComparisonMapper;
+import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class HouseComparisonServiceImplTest {
 
     @Mock
     private HouseComparisonMapper houseComparisonMapper;
+
+    @Mock
+    private PreparationService preparationService;
 
     @InjectMocks
     private HouseComparisonServiceImpl houseComparisonService;
@@ -78,6 +82,7 @@ class HouseComparisonServiceImplTest {
         assertThat(result).isSameAs(finalResponse);
         verify(houseComparisonMapper).insertComparison(userId);
         verify(houseComparisonMapper).insertHouse(100L, "A", request);
+        verify(preparationService).markHouseComparisonCompleted(userId);
     }
 
     @Test
@@ -98,6 +103,7 @@ class HouseComparisonServiceImplTest {
         assertThat(result).isSameAs(finalResponse);
         verify(houseComparisonMapper, never()).insertComparison(any());
         verify(houseComparisonMapper).insertHouse(200L, "B", request);
+        verify(preparationService).markHouseComparisonCompleted(userId);
     }
 
     @Test
@@ -112,7 +118,7 @@ class HouseComparisonServiceImplTest {
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(HouseErrorCode.INVALID_HOUSE_TYPE);
 
-        verifyNoInteractions(houseComparisonMapper);
+        verifyNoInteractions(houseComparisonMapper, preparationService);
     }
 
     @Test
@@ -131,6 +137,8 @@ class HouseComparisonServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(HouseErrorCode.HOUSE_SLOT_ALREADY_OCCUPIED);
+
+        verifyNoInteractions(preparationService);
     }
 
 }

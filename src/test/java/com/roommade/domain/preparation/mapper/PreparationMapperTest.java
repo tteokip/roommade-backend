@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
+import java.time.LocalDateTime;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -82,6 +83,25 @@ class PreparationMapperTest {
         assertThat(result).isNull();
     }
 
+    @Test
+    @DisplayName("최초 비교 매물 등록 완료 시간을 한 번만 기록한다")
+    void marksHouseComparisonCompletedOnlyOnce() {
+        insertUser(940_005L);
+        insertIndependenceProgress(960_005L, 940_005L, 0L);
+
+        int firstUpdatedRows = preparationMapper.markHouseComparisonCompleted(940_005L);
+        LocalDateTime firstCompletedAt =
+                preparationMapper.findHouseComparisonCompletedAtByUserId(940_005L);
+        int secondUpdatedRows = preparationMapper.markHouseComparisonCompleted(940_005L);
+        LocalDateTime secondCompletedAt =
+                preparationMapper.findHouseComparisonCompletedAtByUserId(940_005L);
+
+        assertThat(firstUpdatedRows).isEqualTo(1);
+        assertThat(firstCompletedAt).isNotNull();
+        assertThat(secondUpdatedRows).isZero();
+        assertThat(secondCompletedAt).isEqualTo(firstCompletedAt);
+    }
+
     private void insertUser(long id) {
         jdbcTemplate.update(
                 "INSERT INTO users (id, email, password_hash, created_at, updated_at) "
@@ -108,4 +128,5 @@ class PreparationMapperTest {
                         + "VALUES (?, ?, ?)",
                 id, userId, currentDeposit);
     }
+
 }
