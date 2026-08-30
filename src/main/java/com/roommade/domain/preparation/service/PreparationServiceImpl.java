@@ -4,6 +4,7 @@ import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
+import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse.Status;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
@@ -110,6 +111,37 @@ public class PreparationServiceImpl implements PreparationService {
                 score,
                 HOUSE_COMPARISON_MAX_SCORE,
                 completedAt);
+    }
+
+    /** 사용자 RIR·보증금·집 비교 점수 기반 자립 준비도 전체 진단 결과 생성. */
+    @Override
+    public ReadinessDiagnosisResponse getReadinessDiagnosis(Long userId) {
+        RirDiagnosisResponse rir = getRirDiagnosis(userId);
+        DepositProgressResponse deposit = getDepositProgress(userId);
+        HouseComparisonProgressResponse houseComparison =
+                getHouseComparisonProgress(userId);
+
+        int maxScore = rir.getMaxScore()
+                + deposit.getMaxScore()
+                + houseComparison.getMaxScore();
+        BigDecimal readinessScore = rir.getScore()
+                .add(deposit.getScore())
+                .add(BigDecimal.valueOf(houseComparison.getHouseComparisonScore()));
+
+        if (preparationMapper.findHouseConfirmedAtByUserId(userId) != null) {
+            readinessScore = BigDecimal.valueOf(maxScore)
+                    .setScale(RESPONSE_SCALE, RoundingMode.HALF_UP);
+        }
+
+        return new ReadinessDiagnosisResponse(
+                readinessScore,
+                maxScore,
+                rir.getScore(),
+                rir.getMaxScore(),
+                deposit.getScore(),
+                deposit.getMaxScore(),
+                houseComparison.getHouseComparisonScore(),
+                houseComparison.getMaxScore());
     }
 
     /** 사용자 최초 비교 매물 등록 완료 시간 기록. */

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standal
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
+import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse.Status;
 import com.roommade.domain.preparation.service.PreparationService;
@@ -157,5 +158,34 @@ class PreparationControllerTest {
                 .andExpect(jsonPath("$.data.maxScore").value(10))
                 .andExpect(jsonPath("$.data.houseComparisonCompletedAt")
                         .value("2026-08-30T16:30:00"));
+    }
+
+    @Test
+    @DisplayName("자립 준비도와 구성 항목별 점수·최대 점수를 ApiResponse 형식으로 반환한다")
+    void returnsReadinessDiagnosisAsApiResponse() throws Exception {
+        ReadinessDiagnosisResponse response = new ReadinessDiagnosisResponse(
+                new BigDecimal("75.90"),
+                100,
+                new BigDecimal("34.29"),
+                45,
+                new BigDecimal("31.61"),
+                45,
+                10,
+                10);
+        when(preparationService.getReadinessDiagnosis(eq(USER_ID))).thenReturn(response);
+
+        mockMvc.perform(get("/api/preparations/readiness")
+                        .header("X-User-Id", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("PREPARATION_008"))
+                .andExpect(jsonPath("$.data.readinessScore").value(75.90))
+                .andExpect(jsonPath("$.data.maxScore").value(100))
+                .andExpect(jsonPath("$.data.rirScore").value(34.29))
+                .andExpect(jsonPath("$.data.rirMaxScore").value(45))
+                .andExpect(jsonPath("$.data.depositScore").value(31.61))
+                .andExpect(jsonPath("$.data.depositMaxScore").value(45))
+                .andExpect(jsonPath("$.data.houseComparisonScore").value(10))
+                .andExpect(jsonPath("$.data.houseComparisonMaxScore").value(10));
     }
 }

@@ -102,6 +102,22 @@ class PreparationMapperTest {
         assertThat(secondCompletedAt).isEqualTo(firstCompletedAt);
     }
 
+    @Test
+    @DisplayName("사용자 집 확정 완료 시간을 조회한다")
+    void findsHouseConfirmedAtByUserId() {
+        insertUser(940_006L);
+        insertIndependenceProgress(960_006L, 940_006L, 0L);
+        LocalDateTime confirmedAt = LocalDateTime.of(2026, 8, 30, 18, 0);
+        jdbcTemplate.update(
+                "UPDATE independence_progress SET house_confirmed_at = ? WHERE user_id = ?",
+                confirmedAt, 940_006L);
+
+        LocalDateTime result =
+                preparationMapper.findHouseConfirmedAtByUserId(940_006L);
+
+        assertThat(result).isEqualTo(confirmedAt);
+    }
+
     private void insertUser(long id) {
         jdbcTemplate.update(
                 "INSERT INTO users (id, email, password_hash, created_at, updated_at) "
