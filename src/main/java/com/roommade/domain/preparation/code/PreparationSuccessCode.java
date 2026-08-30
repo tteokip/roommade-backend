@@ -14,7 +14,11 @@ public enum PreparationSuccessCode implements SuccessCode {
     HOUSE_COMPARISON_PROGRESS_FOUND(
             HttpStatus.OK,
             "PREPARATION_007",
-            "집 비교 점수를 조회했습니다.");
+            "집 비교 점수를 조회했습니다."),
+    READINESS_DIAGNOSIS_FOUND(
+            HttpStatus.OK,
+            "PREPARATION_008",
+            "자립 준비도를 조회했습니다.");
 
     private final HttpStatus status;
     private final String code;

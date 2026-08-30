@@ -3,6 +3,7 @@ package com.roommade.domain.preparation.controller;
 import com.roommade.domain.preparation.code.PreparationSuccessCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
+import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.response.ApiResponse;
@@ -43,6 +44,17 @@ public class PreparationController {
                 preparationService.getHouseComparisonProgress(userId);
         return ApiResponse.success(
                 PreparationSuccessCode.HOUSE_COMPARISON_PROGRESS_FOUND,
+                response);
+    }
+
+    /** 사용자 자립 준비도 전체 진단 결과 조회. */
+    @GetMapping("/readiness")
+    public ApiResponse<ReadinessDiagnosisResponse> getReadinessDiagnosis(
+            @RequestHeader("X-User-Id") Long userId) {
+        ReadinessDiagnosisResponse response =
+                preparationService.getReadinessDiagnosis(userId);
+        return ApiResponse.success(
+                PreparationSuccessCode.READINESS_DIAGNOSIS_FOUND,
                 response);
     }
 }

@@ -18,6 +18,9 @@ public interface PreparationMapper {
     /** 사용자 최초 비교 매물 등록 완료 시간 조회. */
     LocalDateTime findHouseComparisonCompletedAtByUserId(@Param("userId") Long userId);
 
+    /** 사용자 집 확정 완료 시간 조회. */
+    LocalDateTime findHouseConfirmedAtByUserId(@Param("userId") Long userId);
+
     /** 사용자 최초 비교 매물 등록 완료 시간 기록. */
     int markHouseComparisonCompleted(@Param("userId") Long userId);
 }
