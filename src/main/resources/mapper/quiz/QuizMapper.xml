@@ -21,6 +21,11 @@
         SELECT #{quizDate}, id
         FROM quiz_questions
         WHERE active = TRUE
+          AND NOT EXISTS (
+              SELECT 1
+              FROM daily_quizzes
+              WHERE daily_quizzes.quiz_question_id = quiz_questions.id
+          )
         ORDER BY RAND()
         LIMIT 1
     </insert>
