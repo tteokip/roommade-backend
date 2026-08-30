@@ -4,6 +4,7 @@ import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
+import java.time.LocalDateTime;
 
 public interface PreparationService {
 
@@ -21,4 +22,7 @@ public interface PreparationService {
 
     /** 사용자 최초 비교 매물 등록 완료 기록. */
     void markHouseComparisonCompleted(Long userId);
+
+    /** 사용자 집 확정 상태 기록. */
+    LocalDateTime confirmHouse(Long userId, Long confirmedHouseId);
 }

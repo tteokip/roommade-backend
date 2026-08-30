@@ -39,6 +39,14 @@
         WHERE user_id = #{userId}
     </select>
 
+    <select id="existsIndependenceProgressByUserId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM independence_progress
+            WHERE user_id = #{userId}
+        )
+    </select>
+
     <update id="markHouseComparisonCompleted">
         UPDATE independence_progress
         SET
@@ -46,6 +54,16 @@
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = #{userId}
           AND house_compare_completed_at IS NULL
+    </update>
+
+    <update id="updateHouseConfirmation">
+        UPDATE independence_progress
+        SET
+            confirmed_house_id = #{confirmedHouseId, jdbcType=BIGINT},
+            house_confirmed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+          AND house_confirmed_at IS NULL
     </update>
 
 </mapper>
