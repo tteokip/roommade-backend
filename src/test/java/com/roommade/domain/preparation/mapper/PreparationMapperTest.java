@@ -2,6 +2,7 @@ package com.roommade.domain.preparation.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +38,7 @@ class PreparationMapperTest {
     @DisplayName("사용자 프로필의 월 소득과 월세 상한을 조회한다")
     void findsRirProfileByUserId() {
         insertUser(940_001L);
-        insertUserProfile(950_001L, 940_001L, 187L, 65L);
+        insertUserProfile(950_001L, 940_001L, 187L, 0L, 65L);
 
         RirProfileResponse result = preparationMapper.findRirProfileByUserId(940_001L);
 
@@ -55,6 +56,32 @@ class PreparationMapperTest {
         assertThat(result).isNull();
     }
 
+    @Test
+    @DisplayName("사용자 목표 보증금과 현재 마련 금액을 원 단위로 조회한다")
+    void findsDepositProgressByUserId() {
+        insertUser(940_003L);
+        insertUserProfile(950_003L, 940_003L, 187L, 50_000_000L, 65L);
+        insertIndependenceProgress(960_003L, 940_003L, 35_123_456L);
+
+        DepositProgressSourceResponse result =
+                preparationMapper.findDepositProgressByUserId(940_003L);
+
+        assertThat(result.getTargetDepositWon()).isEqualTo(50_000_000L);
+        assertThat(result.getCurrentDepositWon()).isEqualTo(35_123_456L);
+    }
+
+    @Test
+    @DisplayName("자립 준비 진행 데이터가 없으면 보증금 조회 결과는 null이다")
+    void returnsNullWhenIndependenceProgressDoesNotExist() {
+        insertUser(940_004L);
+        insertUserProfile(950_004L, 940_004L, 187L, 50_000_000L, 65L);
+
+        DepositProgressSourceResponse result =
+                preparationMapper.findDepositProgressByUserId(940_004L);
+
+        assertThat(result).isNull();
+    }
+
     private void insertUser(long id) {
         jdbcTemplate.update(
                 "INSERT INTO users (id, email, password_hash, created_at, updated_at) "
@@ -63,11 +90,22 @@ class PreparationMapperTest {
     }
 
     private void insertUserProfile(
-            long id, long userId, long monthlyIncome, long monthlyRentLimit) {
+            long id,
+            long userId,
+            long monthlyIncome,
+            long depositLimit,
+            long monthlyRentLimit) {
         jdbcTemplate.update(
                 "INSERT INTO user_profiles "
                         + "(id, user_id, name, birth_date, monthly_income, deposit_limit, monthly_rent_limit) "
-                        + "VALUES (?, ?, '테스트 사용자', '2000-01-01', ?, 0, ?)",
-                id, userId, monthlyIncome, monthlyRentLimit);
+                        + "VALUES (?, ?, '테스트 사용자', '2000-01-01', ?, ?, ?)",
+                id, userId, monthlyIncome, depositLimit, monthlyRentLimit);
+    }
+
+    private void insertIndependenceProgress(long id, long userId, long currentDeposit) {
+        jdbcTemplate.update(
+                "INSERT INTO independence_progress (id, user_id, current_deposit) "
+                        + "VALUES (?, ?, ?)",
+                id, userId, currentDeposit);
     }
 }

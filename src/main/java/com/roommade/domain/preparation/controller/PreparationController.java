@@ -1,6 +1,7 @@
 package com.roommade.domain.preparation.controller;
 
 import com.roommade.domain.preparation.code.PreparationSuccessCode;
+import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.response.ApiResponse;
@@ -23,5 +24,13 @@ public class PreparationController {
             @RequestHeader("X-User-Id") Long userId) {
         RirDiagnosisResponse response = preparationService.getRirDiagnosis(userId);
         return ApiResponse.success(PreparationSuccessCode.RIR_DIAGNOSIS_FOUND, response);
+    }
+
+    /** 사용자 보증금 마련 현황 조회. */
+    @GetMapping("/deposit")
+    public ApiResponse<DepositProgressResponse> getDepositProgress(
+            @RequestHeader("X-User-Id") Long userId) {
+        DepositProgressResponse response = preparationService.getDepositProgress(userId);
+        return ApiResponse.success(PreparationSuccessCode.DEPOSIT_PROGRESS_FOUND, response);
     }
 }

@@ -13,4 +13,14 @@
         WHERE user_id = #{userId}
     </select>
 
+    <select id="findDepositProgressByUserId"
+            resultType="com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse">
+        SELECT
+            up.deposit_limit AS target_deposit_won,
+            ip.current_deposit AS current_deposit_won
+        FROM user_profiles up
+        INNER JOIN independence_progress ip ON ip.user_id = up.user_id
+        WHERE up.user_id = #{userId}
+    </select>
+
 </mapper>
