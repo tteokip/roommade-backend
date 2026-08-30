@@ -4,6 +4,7 @@ import com.roommade.domain.house.code.HouseErrorCode;
 import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
 import com.roommade.domain.house.mapper.HouseComparisonMapper;
+import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -19,6 +20,7 @@ public class HouseComparisonServiceImpl implements HouseComparisonService {
     private static final String HOUSE_TYPE_B = "B";
 
     private final HouseComparisonMapper houseComparisonMapper;
+    private final PreparationService preparationService;
 
     @Override
     public HouseComparisonCurrentResponse getCurrentComparison(Long userId) {
@@ -40,6 +42,8 @@ public class HouseComparisonServiceImpl implements HouseComparisonService {
             // (comparison_id, house_type) UNIQUE 위반 — 이미 등록된 슬롯이다.
             throw new BusinessException(HouseErrorCode.HOUSE_SLOT_ALREADY_OCCUPIED);
         }
+
+        preparationService.markHouseComparisonCompleted(userId);
 
         return houseComparisonMapper.findCurrentByUserId(userId);
     }

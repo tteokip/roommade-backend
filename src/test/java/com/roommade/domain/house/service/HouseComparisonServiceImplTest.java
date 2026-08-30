@@ -13,6 +13,7 @@ import com.roommade.domain.house.code.HouseErrorCode;
 import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
 import com.roommade.domain.house.mapper.HouseComparisonMapper;
+import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,9 @@ class HouseComparisonServiceImplTest {
 
     @Mock
     private HouseComparisonMapper houseComparisonMapper;
+
+    @Mock
+    private PreparationService preparationService;
 
     @InjectMocks
     private HouseComparisonServiceImpl houseComparisonService;
@@ -64,7 +68,7 @@ class HouseComparisonServiceImplTest {
     void createsComparisonWhenNoneExistsThenRegistersHouse() {
         Long userId = 1L;
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시 강남구", 10_000L, 50L, null, null, null, null, null, null, null);
+                "서울시 강남구", 100_000_000L, 500_000L, null, null, null, null, null, null, null);
         HouseComparisonCurrentResponse afterCreate = new HouseComparisonCurrentResponse(100L, null, null, false);
         HouseComparisonCurrentResponse finalResponse = new HouseComparisonCurrentResponse(100L, null, null, false);
 
@@ -78,6 +82,7 @@ class HouseComparisonServiceImplTest {
         assertThat(result).isSameAs(finalResponse);
         verify(houseComparisonMapper).insertComparison(userId);
         verify(houseComparisonMapper).insertHouse(100L, "A", request);
+        verify(preparationService).markHouseComparisonCompleted(userId);
     }
 
     @Test
@@ -98,6 +103,7 @@ class HouseComparisonServiceImplTest {
         assertThat(result).isSameAs(finalResponse);
         verify(houseComparisonMapper, never()).insertComparison(any());
         verify(houseComparisonMapper).insertHouse(200L, "B", request);
+        verify(preparationService).markHouseComparisonCompleted(userId);
     }
 
     @Test
@@ -105,14 +111,14 @@ class HouseComparisonServiceImplTest {
     void throwsExceptionWhenHouseTypeIsInvalid() {
         Long userId = 1L;
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시", 1000L, 10L, null, null, null, null, null, null, null);
+                "서울시", 10_000_000L, 100_000L, null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> houseComparisonService.registerHouse(userId, "C", request))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(HouseErrorCode.INVALID_HOUSE_TYPE);
 
-        verifyNoInteractions(houseComparisonMapper);
+        verifyNoInteractions(houseComparisonMapper, preparationService);
     }
 
     @Test
@@ -120,7 +126,7 @@ class HouseComparisonServiceImplTest {
     void throwsHouseSlotAlreadyOccupiedWhenInsertHouseViolatesUniqueConstraint() {
         Long userId = 1L;
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시", 1000L, 10L, null, null, null, null, null, null, null);
+                "서울시", 10_000_000L, 100_000L, null, null, null, null, null, null, null);
         HouseComparisonCurrentResponse existing = new HouseComparisonCurrentResponse(300L, null, null, false);
 
         when(houseComparisonMapper.findCurrentByUserId(userId)).thenReturn(existing);
@@ -131,6 +137,8 @@ class HouseComparisonServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(HouseErrorCode.HOUSE_SLOT_ALREADY_OCCUPIED);
+
+        verifyNoInteractions(preparationService);
     }
 
 }

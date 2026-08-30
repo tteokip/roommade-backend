@@ -1,0 +1,132 @@
+package com.roommade.domain.preparation.mapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
+import com.roommade.domain.preparation.dto.response.RirProfileResponse;
+import java.time.LocalDateTime;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * root-context.xml을 그대로 로드하는 통합 테스트다. 로컬 Docker Compose MySQL이 떠 있어야 한다
+ * (docker compose up -d).
+ */
+@SpringJUnitConfig(locations = "file:src/main/webapp/WEB-INF/spring/root-context.xml")
+@Transactional
+class PreparationMapperTest {
+
+    @Autowired
+    private PreparationMapper preparationMapper;
+
+    @Autowired
+    private DataSource dataSource;
+
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        jdbcTemplate = new JdbcTemplate(dataSource);
+    }
+
+    @Test
+    @DisplayName("사용자 프로필의 월 소득과 월세 상한을 조회한다")
+    void findsRirProfileByUserId() {
+        insertUser(940_001L);
+        insertUserProfile(950_001L, 940_001L, 187L, 0L, 65L);
+
+        RirProfileResponse result = preparationMapper.findRirProfileByUserId(940_001L);
+
+        assertThat(result.getMonthlyIncome()).isEqualTo(187L);
+        assertThat(result.getMonthlyRentLimit()).isEqualTo(65L);
+    }
+
+    @Test
+    @DisplayName("사용자 프로필이 없으면 null을 반환한다")
+    void returnsNullWhenRirProfileDoesNotExist() {
+        insertUser(940_002L);
+
+        RirProfileResponse result = preparationMapper.findRirProfileByUserId(940_002L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("사용자 목표 보증금과 현재 마련 금액을 원 단위로 조회한다")
+    void findsDepositProgressByUserId() {
+        insertUser(940_003L);
+        insertUserProfile(950_003L, 940_003L, 187L, 50_000_000L, 65L);
+        insertIndependenceProgress(960_003L, 940_003L, 35_123_456L);
+
+        DepositProgressSourceResponse result =
+                preparationMapper.findDepositProgressByUserId(940_003L);
+
+        assertThat(result.getTargetDepositWon()).isEqualTo(50_000_000L);
+        assertThat(result.getCurrentDepositWon()).isEqualTo(35_123_456L);
+    }
+
+    @Test
+    @DisplayName("자립 준비 진행 데이터가 없으면 보증금 조회 결과는 null이다")
+    void returnsNullWhenIndependenceProgressDoesNotExist() {
+        insertUser(940_004L);
+        insertUserProfile(950_004L, 940_004L, 187L, 50_000_000L, 65L);
+
+        DepositProgressSourceResponse result =
+                preparationMapper.findDepositProgressByUserId(940_004L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    @DisplayName("최초 비교 매물 등록 완료 시간을 한 번만 기록한다")
+    void marksHouseComparisonCompletedOnlyOnce() {
+        insertUser(940_005L);
+        insertIndependenceProgress(960_005L, 940_005L, 0L);
+
+        int firstUpdatedRows = preparationMapper.markHouseComparisonCompleted(940_005L);
+        LocalDateTime firstCompletedAt =
+                preparationMapper.findHouseComparisonCompletedAtByUserId(940_005L);
+        int secondUpdatedRows = preparationMapper.markHouseComparisonCompleted(940_005L);
+        LocalDateTime secondCompletedAt =
+                preparationMapper.findHouseComparisonCompletedAtByUserId(940_005L);
+
+        assertThat(firstUpdatedRows).isEqualTo(1);
+        assertThat(firstCompletedAt).isNotNull();
+        assertThat(secondUpdatedRows).isZero();
+        assertThat(secondCompletedAt).isEqualTo(firstCompletedAt);
+    }
+
+    private void insertUser(long id) {
+        jdbcTemplate.update(
+                "INSERT INTO users (id, email, password_hash, created_at, updated_at) "
+                        + "VALUES (?, ?, ?, NOW(), NOW())",
+                id, "preparation-test-user-" + id + "@example.com", "encoded-password");
+    }
+
+    private void insertUserProfile(
+            long id,
+            long userId,
+            long monthlyIncome,
+            long depositLimit,
+            long monthlyRentLimit) {
+        jdbcTemplate.update(
+                "INSERT INTO user_profiles "
+                        + "(id, user_id, name, birth_date, monthly_income, deposit_limit, monthly_rent_limit) "
+                        + "VALUES (?, ?, '테스트 사용자', '2000-01-01', ?, ?, ?)",
+                id, userId, monthlyIncome, depositLimit, monthlyRentLimit);
+    }
+
+    private void insertIndependenceProgress(long id, long userId, long currentDeposit) {
+        jdbcTemplate.update(
+                "INSERT INTO independence_progress (id, user_id, current_deposit) "
+                        + "VALUES (?, ?, ?)",
+                id, userId, currentDeposit);
+    }
+
+}

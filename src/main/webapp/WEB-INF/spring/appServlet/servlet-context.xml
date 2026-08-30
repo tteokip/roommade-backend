@@ -10,11 +10,28 @@
                                   http://www.springframework.org/schema/context
                                   http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <annotation-driven/>
+    <beans:bean id="objectMapper" class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean">
+        <beans:property name="modulesToInstall">
+            <beans:array>
+                <beans:value>com.fasterxml.jackson.datatype.jsr310.JavaTimeModule</beans:value>
+            </beans:array>
+        </beans:property>
+    </beans:bean>
+
+    <annotation-driven>
+        <message-converters register-defaults="true">
+            <beans:bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <beans:property name="objectMapper" ref="objectMapper"/>
+            </beans:bean>
+        </message-converters>
+    </annotation-driven>
 
     <context:component-scan base-package="com.roommade" use-default-filters="false">
         <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
         <context:include-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
     </context:component-scan>
+
+    <beans:bean id="multipartResolver"
+                class="org.springframework.web.multipart.support.StandardServletMultipartResolver"/>
 
 </beans:beans>
