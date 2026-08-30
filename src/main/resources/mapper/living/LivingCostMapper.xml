@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.living.mapper.LivingCostMapper">
+
+    <select id="findDailyCostsBetween" resultType="com.roommade.domain.living.dto.response.DailyLivingCostItemResponse">
+        SELECT
+            spending_date AS spendingDate,
+            total_amount AS totalAmount
+        FROM daily_living_costs
+        WHERE user_id = #{userId}
+          AND spending_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY spending_date
+    </select>
+
+    <select id="sumDailyCostsBetween" resultType="java.lang.Long">
+        SELECT COALESCE(SUM(total_amount), 0)
+        FROM daily_living_costs
+        WHERE user_id = #{userId}
+          AND spending_date BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="findMonthlyTotal" resultType="java.lang.Long">
+        SELECT total_amount
+        FROM monthly_living_costs
+        WHERE user_id = #{userId}
+          AND `year_month` = #{yearMonth}
+    </select>
+
+</mapper>
