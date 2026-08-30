@@ -2,7 +2,6 @@ package com.roommade.domain.living.controller;
 
 import com.roommade.domain.living.code.LivingErrorCode;
 import com.roommade.domain.living.code.LivingSuccessCode;
-import com.roommade.domain.living.dto.request.EmergencyFundCurrentAmountRequest;
 import com.roommade.domain.living.dto.request.EmergencyFundTargetRequest;
 import com.roommade.domain.living.dto.response.EmergencyFundResponse;
 import com.roommade.domain.living.service.EmergencyFundService;
@@ -42,16 +41,6 @@ public class EmergencyFundController {
         validateUserId(userId);
         EmergencyFundResponse response = emergencyFundService.setTarget(userId, request.getTargetAmount());
         return ApiResponse.success(LivingSuccessCode.EMERGENCY_FUND_TARGET_UPDATED, response);
-    }
-
-    @PutMapping("/current-amount")
-    public ApiResponse<EmergencyFundResponse> updateCurrentAmount(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Valid @RequestBody EmergencyFundCurrentAmountRequest request) {
-        validateUserId(userId);
-        EmergencyFundResponse response =
-                emergencyFundService.updateCurrentAmount(userId, request.getCurrentAmount());
-        return ApiResponse.success(LivingSuccessCode.EMERGENCY_FUND_CURRENT_AMOUNT_UPDATED, response);
     }
 
     private void validateUserId(Long userId) {

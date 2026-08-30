@@ -19,9 +19,4 @@ public interface EmergencyFundMapper {
             @Param("userId") Long userId,
             @Param("targetAmount") Long targetAmount,
             @Param("achievedAt") LocalDateTime achievedAt);
-
-    void updateCurrentAmount(
-            @Param("userId") Long userId,
-            @Param("currentAmount") Long currentAmount,
-            @Param("achievedAt") LocalDateTime achievedAt);
 }

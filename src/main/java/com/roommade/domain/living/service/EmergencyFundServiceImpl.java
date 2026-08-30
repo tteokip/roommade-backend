@@ -27,34 +27,24 @@ public class EmergencyFundServiceImpl implements EmergencyFundService {
     @Transactional
     public EmergencyFundResponse setTarget(Long userId, Long targetAmount) {
         EmergencyFundResponse current = emergencyFundMapper.findByUserId(userId);
+        boolean wasAlreadyAchieved = current != null && current.getAchievedAt() != null;
 
+        LocalDateTime achievedAt;
         if (current == null) {
-            LocalDateTime achievedAt = resolveAchievedAt(null, 0L, targetAmount);
+            achievedAt = resolveAchievedAt(null, 0L, targetAmount);
             try {
                 emergencyFundMapper.insert(userId, targetAmount, achievedAt);
             } catch (DataIntegrityViolationException exception) {
                 throw new BusinessException(LivingErrorCode.USER_NOT_FOUND);
             }
         } else {
-            LocalDateTime achievedAt =
-                    resolveAchievedAt(current.getAchievedAt(), current.getCurrentAmount(), targetAmount);
+            achievedAt = resolveAchievedAt(current.getAchievedAt(), current.getCurrentAmount(), targetAmount);
             emergencyFundMapper.updateTarget(userId, targetAmount, achievedAt);
         }
 
-        return emergencyFundMapper.findByUserId(userId);
-    }
-
-    @Override
-    @Transactional
-    public EmergencyFundResponse updateCurrentAmount(Long userId, Long currentAmount) {
-        EmergencyFundResponse current = emergencyFundMapper.findByUserId(userId);
-        if (current == null) {
-            throw new BusinessException(LivingErrorCode.EMERGENCY_FUND_NOT_SET);
+        if (!wasAlreadyAchieved && achievedAt != null) {
+            // TODO(coin 도메인): 비상금 목표 최초 달성 시 보상 코인 지급 호출
         }
-
-        LocalDateTime achievedAt =
-                resolveAchievedAt(current.getAchievedAt(), currentAmount, current.getTargetAmount());
-        emergencyFundMapper.updateCurrentAmount(userId, currentAmount, achievedAt);
 
         return emergencyFundMapper.findByUserId(userId);
     }
