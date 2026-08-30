@@ -9,12 +9,14 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standal
 
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
+import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse.Status;
 import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.exception.BusinessException;
 import com.roommade.global.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -135,5 +137,25 @@ class PreparationControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value("PREPARATION_006"))
                 .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("집 비교 점수와 집 확정 현황을 ApiResponse 형식으로 반환한다")
+    void returnsHouseComparisonProgressAsApiResponse() throws Exception {
+        HouseComparisonProgressResponse response = new HouseComparisonProgressResponse(
+                10,
+                10,
+                LocalDateTime.of(2026, 8, 30, 16, 30));
+        when(preparationService.getHouseComparisonProgress(eq(USER_ID))).thenReturn(response);
+
+        mockMvc.perform(get("/api/preparations/house-comparison")
+                        .header("X-User-Id", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value("PREPARATION_007"))
+                .andExpect(jsonPath("$.data.houseComparisonScore").value(10))
+                .andExpect(jsonPath("$.data.maxScore").value(10))
+                .andExpect(jsonPath("$.data.houseComparisonCompletedAt")
+                        .value("2026-08-30T16:30:00"));
     }
 }

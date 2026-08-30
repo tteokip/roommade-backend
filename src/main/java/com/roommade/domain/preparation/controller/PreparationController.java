@@ -2,6 +2,7 @@ package com.roommade.domain.preparation.controller;
 
 import com.roommade.domain.preparation.code.PreparationSuccessCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
+import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.response.ApiResponse;
@@ -32,5 +33,16 @@ public class PreparationController {
             @RequestHeader("X-User-Id") Long userId) {
         DepositProgressResponse response = preparationService.getDepositProgress(userId);
         return ApiResponse.success(PreparationSuccessCode.DEPOSIT_PROGRESS_FOUND, response);
+    }
+
+    /** 사용자 집 비교 점수 조회. */
+    @GetMapping("/house-comparison")
+    public ApiResponse<HouseComparisonProgressResponse> getHouseComparisonProgress(
+            @RequestHeader("X-User-Id") Long userId) {
+        HouseComparisonProgressResponse response =
+                preparationService.getHouseComparisonProgress(userId);
+        return ApiResponse.success(
+                PreparationSuccessCode.HOUSE_COMPARISON_PROGRESS_FOUND,
+                response);
     }
 }

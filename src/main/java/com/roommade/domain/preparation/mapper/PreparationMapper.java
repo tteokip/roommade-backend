@@ -2,6 +2,7 @@ package com.roommade.domain.preparation.mapper;
 
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
+import java.time.LocalDateTime;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -13,4 +14,10 @@ public interface PreparationMapper {
 
     /** 사용자 보증금 계산용 목표 금액과 현재 마련 금액 조회. */
     DepositProgressSourceResponse findDepositProgressByUserId(@Param("userId") Long userId);
+
+    /** 사용자 최초 비교 매물 등록 완료 시간 조회. */
+    LocalDateTime findHouseComparisonCompletedAtByUserId(@Param("userId") Long userId);
+
+    /** 사용자 최초 비교 매물 등록 완료 시간 기록. */
+    int markHouseComparisonCompleted(@Param("userId") Long userId);
 }
