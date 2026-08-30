@@ -3,6 +3,7 @@ package com.roommade.domain.preparation.service;
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
+import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse.Status;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
@@ -10,6 +11,7 @@ import com.roommade.domain.preparation.mapper.PreparationMapper;
 import com.roommade.global.exception.BusinessException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ public class PreparationServiceImpl implements PreparationService {
     private static final BigDecimal RIR_SCORE_WEIGHT = new BigDecimal("0.45");
     private static final BigDecimal DEPOSIT_SCORE_WEIGHT = new BigDecimal("0.45");
     private static final int MAX_SCORE = 45;
+    private static final int HOUSE_COMPARISON_MAX_SCORE = 10;
     private static final int TARGET_RIR_PERCENT = 30;
 
     private final PreparationMapper preparationMapper;
@@ -93,6 +96,27 @@ public class PreparationServiceImpl implements PreparationService {
                 toResponseScale(score),
                 MAX_SCORE,
                 remainingDepositWon);
+    }
+
+    /** 사용자 집 비교 완료 여부 기반 점수 생성. */
+    @Override
+    public HouseComparisonProgressResponse getHouseComparisonProgress(Long userId) {
+        LocalDateTime completedAt =
+                preparationMapper.findHouseComparisonCompletedAtByUserId(userId);
+        int score = completedAt == null
+                ? 0
+                : HOUSE_COMPARISON_MAX_SCORE;
+        return new HouseComparisonProgressResponse(
+                score,
+                HOUSE_COMPARISON_MAX_SCORE,
+                completedAt);
+    }
+
+    /** 사용자 최초 비교 매물 등록 완료 시간 기록. */
+    @Override
+    @Transactional
+    public void markHouseComparisonCompleted(Long userId) {
+        preparationMapper.markHouseComparisonCompleted(userId);
     }
 
     /** 보증금 계산에 필요한 목표 금액과 현재 마련 금액 유효성 검증. */
