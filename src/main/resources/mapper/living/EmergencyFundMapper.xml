@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.living.mapper.EmergencyFundMapper">
+
+    <resultMap id="emergencyFundResultMap" type="com.roommade.domain.living.dto.response.EmergencyFundResponse">
+        <result property="targetAmount" column="target_amount"/>
+        <result property="currentAmount" column="current_amount"/>
+        <result property="achieved" column="achieved"/>
+        <result property="achievedAt" column="achieved_at"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="emergencyFundResultMap">
+        SELECT
+            target_amount,
+            current_amount,
+            CASE WHEN current_amount >= target_amount THEN 1 ELSE 0 END AS achieved,
+            achieved_at
+        FROM emergency_funds
+        WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO emergency_funds (user_id, target_amount, current_amount, achieved_at)
+        VALUES (#{userId}, #{targetAmount}, 0, #{achievedAt})
+    </insert>
+
+    <update id="updateTarget">
+        UPDATE emergency_funds
+        SET target_amount = #{targetAmount},
+            achieved_at = #{achievedAt}
+        WHERE user_id = #{userId}
+    </update>
+
+</mapper>
