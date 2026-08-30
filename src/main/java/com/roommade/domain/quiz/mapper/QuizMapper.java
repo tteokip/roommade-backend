@@ -27,11 +27,5 @@ public interface QuizMapper {
             @Param("selectedChoiceId") Long selectedChoiceId,
             @Param("correct") boolean correct);
 
-    int increaseCoinBalance(@Param("userId") Long userId, @Param("amount") int amount);
-
-    void insertCoinWallet(@Param("userId") Long userId, @Param("amount") int amount);
-
-    Integer findCoinBalanceByUserId(@Param("userId") Long userId);
-
     List<QuizAttemptHistoryResponse> findAttemptHistoryByUserId(@Param("userId") Long userId);
 }
