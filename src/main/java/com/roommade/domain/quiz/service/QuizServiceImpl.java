@@ -1,5 +1,6 @@
 package com.roommade.domain.quiz.service;
 
+import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.quiz.code.QuizErrorCode;
 import com.roommade.domain.quiz.dto.response.QuizAnswerEvaluationResponse;
 import com.roommade.domain.quiz.dto.response.QuizAnswerSubmitResponse;
@@ -24,6 +25,7 @@ public class QuizServiceImpl implements QuizService {
     private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
 
     private final QuizMapper quizMapper;
+    private final CoinService coinService;
 
     @Override
     @Transactional
@@ -70,9 +72,9 @@ public class QuizServiceImpl implements QuizService {
         }
 
         int earnedPoint = evaluation.isCorrect() ? QUIZ_REWARD_POINT : 0;
-        if (earnedPoint > 0) {
-            addQuizReward(userId, earnedPoint);
-        }
+        int coinBalance = earnedPoint > 0
+                ? coinService.earn(userId, earnedPoint)
+                : coinService.getBalance(userId).getBalance();
 
         List<QuizAttemptHistoryResponse> attempts = quizMapper.findAttemptHistoryByUserId(userId);
         return new QuizAnswerSubmitResponse(
@@ -82,7 +84,7 @@ public class QuizServiceImpl implements QuizService {
                 evaluation.getExplanation(),
                 earnedPoint,
                 calculateCurrentStreak(attempts, quizDate),
-                coinBalance(userId));
+                coinBalance);
     }
 
     @Override
@@ -90,17 +92,6 @@ public class QuizServiceImpl implements QuizService {
     public QuizHistoryResponse getQuizHistory(Long userId) {
         List<QuizAttemptHistoryResponse> attempts = quizMapper.findAttemptHistoryByUserId(userId);
         return new QuizHistoryResponse(calculateCurrentStreak(attempts, today()), attempts);
-    }
-
-    private void addQuizReward(Long userId, int amount) {
-        if (quizMapper.increaseCoinBalance(userId, amount) == 0) {
-            quizMapper.insertCoinWallet(userId, amount);
-        }
-    }
-
-    private int coinBalance(Long userId) {
-        Integer balance = quizMapper.findCoinBalanceByUserId(userId);
-        return balance == null ? 0 : balance;
     }
 
     private int calculateCurrentStreak(List<QuizAttemptHistoryResponse> attempts, LocalDate today) {
