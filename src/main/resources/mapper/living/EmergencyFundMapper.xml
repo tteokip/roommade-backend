@@ -33,4 +33,11 @@
         WHERE user_id = #{userId}
     </update>
 
+    <update id="updateCurrentAmount">
+        UPDATE emergency_funds
+        SET current_amount = #{currentAmount},
+            achieved_at = #{achievedAt}
+        WHERE user_id = #{userId}
+    </update>
+
 </mapper>

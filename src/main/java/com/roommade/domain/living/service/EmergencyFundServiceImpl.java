@@ -44,6 +44,21 @@ public class EmergencyFundServiceImpl implements EmergencyFundService {
         return emergencyFundMapper.findByUserId(userId);
     }
 
+    @Override
+    @Transactional
+    public EmergencyFundResponse updateCurrentAmount(Long userId, Long currentAmount) {
+        EmergencyFundResponse current = emergencyFundMapper.findByUserId(userId);
+        if (current == null) {
+            throw new BusinessException(LivingErrorCode.EMERGENCY_FUND_NOT_SET);
+        }
+
+        LocalDateTime achievedAt =
+                resolveAchievedAt(current.getAchievedAt(), currentAmount, current.getTargetAmount());
+        emergencyFundMapper.updateCurrentAmount(userId, currentAmount, achievedAt);
+
+        return emergencyFundMapper.findByUserId(userId);
+    }
+
     /**
      * achieved_at은 "최초 달성 일시"이므로 한 번 채워지면 목표 금액이 나중에 올라가도 지우지 않는다.
      */
