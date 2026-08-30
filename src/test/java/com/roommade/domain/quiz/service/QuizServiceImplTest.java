@@ -18,6 +18,7 @@ import com.roommade.domain.quiz.dto.response.TodayQuizResponse;
 import com.roommade.domain.quiz.mapper.QuizMapper;
 import com.roommade.global.exception.BusinessException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class QuizServiceImplTest {
     private static final Long USER_ID = 1L;
     private static final Long QUIZ_QUESTION_ID = 10L;
     private static final Long CHOICE_ID = 100L;
+    private static final ZoneId KOREA_ZONE_ID = ZoneId.of("Asia/Seoul");
 
     @Mock
     private QuizMapper quizMapper;
@@ -47,7 +49,7 @@ class QuizServiceImplTest {
 
     @Test
     void submitTodayQuizAnswer_correctAnswerRewardsFiftyPoints() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KOREA_ZONE_ID);
         when(quizMapper.findTodayQuiz(any(), anyLong()))
                 .thenReturn(new TodayQuizResponse(today, QUIZ_QUESTION_ID, "OX", "문제", List.of(), false));
         when(quizMapper.existsAttemptByUserIdAndQuizDate(anyLong(), any())).thenReturn(false);
@@ -69,7 +71,7 @@ class QuizServiceImplTest {
 
     @Test
     void submitTodayQuizAnswer_incorrectAnswerKeepsCurrentCoinBalance() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KOREA_ZONE_ID);
         when(quizMapper.findTodayQuiz(any(), anyLong()))
                 .thenReturn(new TodayQuizResponse(today, QUIZ_QUESTION_ID, "OX", "문제", List.of(), false));
         when(quizMapper.existsAttemptByUserIdAndQuizDate(anyLong(), any())).thenReturn(false);
@@ -90,7 +92,7 @@ class QuizServiceImplTest {
 
     @Test
     void submitTodayQuizAnswer_alreadyAttempted_throwsBusinessException() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KOREA_ZONE_ID);
         when(quizMapper.findTodayQuiz(any(), anyLong()))
                 .thenReturn(new TodayQuizResponse(today, QUIZ_QUESTION_ID, "OX", "문제", List.of(), true));
         when(quizMapper.existsAttemptByUserIdAndQuizDate(anyLong(), any())).thenReturn(true);
@@ -105,7 +107,7 @@ class QuizServiceImplTest {
 
     @Test
     void getQuizHistory_countsConsecutiveCorrectDaysFromYesterday() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(KOREA_ZONE_ID);
         when(quizMapper.findAttemptHistoryByUserId(USER_ID)).thenReturn(List.of(
                 new QuizAttemptHistoryResponse(today.minusDays(1), 2L, "어제 문제", true, 50),
                 new QuizAttemptHistoryResponse(today.minusDays(2), 3L, "그제 문제", true, 50),
