@@ -1,6 +1,8 @@
 package com.roommade.domain.preparation.service;
 
 import com.roommade.domain.preparation.code.PreparationErrorCode;
+import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
+import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse.Status;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
@@ -25,6 +27,7 @@ public class PreparationServiceImpl implements PreparationService {
     private static final BigDecimal SEVERE_RIR_LIMIT = BigDecimal.valueOf(50);
     private static final BigDecimal RIR_RANGE = BigDecimal.valueOf(20);
     private static final BigDecimal RIR_SCORE_WEIGHT = new BigDecimal("0.45");
+    private static final BigDecimal DEPOSIT_SCORE_WEIGHT = new BigDecimal("0.45");
     private static final int MAX_SCORE = 45;
     private static final int TARGET_RIR_PERCENT = 30;
 
@@ -62,6 +65,54 @@ public class PreparationServiceImpl implements PreparationService {
                 determineStatus(monthlyIncome, monthlyRent),
                 targetMonthlyRentWon,
                 requiredRentReductionWon);
+    }
+
+    /** 사용자 보증금 원천 데이터 조회 및 마련 현황 생성. */
+    @Override
+    public DepositProgressResponse getDepositProgress(Long userId) {
+        DepositProgressSourceResponse source =
+                preparationMapper.findDepositProgressByUserId(userId);
+        if (source == null) {
+            throw new BusinessException(PreparationErrorCode.DEPOSIT_DATA_NOT_FOUND);
+        }
+
+        validateDepositProgress(source);
+
+        BigDecimal targetDeposit = BigDecimal.valueOf(source.getTargetDepositWon());
+        BigDecimal currentDeposit = BigDecimal.valueOf(source.getCurrentDepositWon());
+        BigDecimal achievementRate = calculateDepositAchievementRate(
+                targetDeposit, currentDeposit);
+        BigDecimal score = achievementRate.multiply(DEPOSIT_SCORE_WEIGHT);
+        long remainingDepositWon = Math.max(
+                source.getTargetDepositWon() - source.getCurrentDepositWon(), 0L);
+
+        return new DepositProgressResponse(
+                source.getTargetDepositWon(),
+                source.getCurrentDepositWon(),
+                toResponseScale(achievementRate),
+                toResponseScale(score),
+                MAX_SCORE,
+                remainingDepositWon);
+    }
+
+    /** 보증금 계산에 필요한 목표 금액과 현재 마련 금액 유효성 검증. */
+    private void validateDepositProgress(DepositProgressSourceResponse source) {
+        if (source.getTargetDepositWon() == null
+                || source.getCurrentDepositWon() == null
+                || source.getTargetDepositWon() <= 0
+                || source.getCurrentDepositWon() < 0) {
+            throw new BusinessException(PreparationErrorCode.DEPOSIT_NOT_CALCULABLE);
+        }
+    }
+
+    /** 목표 보증금 대비 현재 마련 금액 달성률 계산. */
+    private BigDecimal calculateDepositAchievementRate(
+            BigDecimal targetDeposit, BigDecimal currentDeposit) {
+        if (currentDeposit.compareTo(targetDeposit) >= 0) {
+            return ONE_HUNDRED;
+        }
+        return currentDeposit.multiply(ONE_HUNDRED)
+                .divide(targetDeposit, INTERNAL_SCALE, RoundingMode.HALF_UP);
     }
 
     /** RIR 계산에 필요한 월 소득과 예상 월세 유효성 검증. */

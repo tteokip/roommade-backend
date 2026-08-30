@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum PreparationSuccessCode implements SuccessCode {
 
-    RIR_DIAGNOSIS_FOUND(HttpStatus.OK, "PREPARATION_001", "RIR 진단 결과를 조회했습니다.");
+    RIR_DIAGNOSIS_FOUND(HttpStatus.OK, "PREPARATION_001", "RIR 진단 결과를 조회했습니다."),
+    DEPOSIT_PROGRESS_FOUND(HttpStatus.OK, "PREPARATION_004", "보증금 마련 현황을 조회했습니다.");
 
     private final HttpStatus status;
     private final String code;
