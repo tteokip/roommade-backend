@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.quiz.mapper.QuizMapper">
+
+    <resultMap id="todayQuizResultMap" type="com.roommade.domain.quiz.dto.response.TodayQuizResponse">
+        <id property="quizQuestionId" column="quiz_question_id"/>
+        <result property="quizDate" column="quiz_date"/>
+        <result property="quizType" column="quiz_type"/>
+        <result property="question" column="question"/>
+        <result property="attempted" column="attempted"/>
+        <collection property="choices" ofType="com.roommade.domain.quiz.dto.response.QuizChoiceResponse">
+            <id property="choiceId" column="choice_id"/>
+            <result property="content" column="choice_content"/>
+        </collection>
+    </resultMap>
+
+    <insert id="insertDailyQuizIfAbsent">
+        INSERT IGNORE INTO daily_quizzes (quiz_date, quiz_question_id)
+        SELECT #{quizDate}, id
+        FROM quiz_questions
+        WHERE active = TRUE
+        ORDER BY RAND()
+        LIMIT 1
+    </insert>
+
+    <select id="findTodayQuiz" resultMap="todayQuizResultMap">
+        SELECT dq.quiz_date,
+               qq.id AS quiz_question_id,
+               qq.quiz_type,
+               qq.question,
+               qc.id AS choice_id,
+               qc.content AS choice_content,
+               EXISTS(
+                   SELECT 1
+                   FROM user_quiz_attempts uqa
+                   WHERE uqa.user_id = #{userId}
+                     AND uqa.quiz_date = dq.quiz_date
+               ) AS attempted
+        FROM daily_quizzes dq
+        INNER JOIN quiz_questions qq ON qq.id = dq.quiz_question_id
+        INNER JOIN quiz_choices qc ON qc.question_id = qq.id
+        WHERE dq.quiz_date = #{quizDate}
+        ORDER BY qc.id ASC
+    </select>
+
+    <select id="existsAttemptByUserIdAndQuizDate" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM user_quiz_attempts
+            WHERE user_id = #{userId}
+              AND quiz_date = #{quizDate}
+        )
+    </select>
+
+    <select id="findAnswerEvaluation" resultType="com.roommade.domain.quiz.dto.response.QuizAnswerEvaluationResponse">
+        SELECT selected_choice.is_correct AS correct,
+               correct_choice.content AS correct_choice_content,
+               qq.explanation
+        FROM quiz_questions qq
+        INNER JOIN quiz_choices selected_choice
+            ON selected_choice.question_id = qq.id
+           AND selected_choice.id = #{selectedChoiceId}
+        INNER JOIN quiz_choices correct_choice
+            ON correct_choice.question_id = qq.id
+           AND correct_choice.is_correct = TRUE
+        WHERE qq.id = #{quizQuestionId}
+    </select>
+
+    <insert id="insertAttempt">
+        INSERT INTO user_quiz_attempts (
+            user_id,
+            quiz_date,
+            quiz_question_id,
+            selected_choice_id,
+            is_correct
+        ) VALUES (
+            #{userId},
+            #{quizDate},
+            #{quizQuestionId},
+            #{selectedChoiceId},
+            #{correct}
+        )
+    </insert>
+
+    <update id="increaseCoinBalance">
+        UPDATE coin_wallets
+        SET balance = balance + #{amount},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <insert id="insertCoinWallet">
+        INSERT INTO coin_wallets (user_id, balance)
+        VALUES (#{userId}, #{amount})
+    </insert>
+
+    <select id="findCoinBalanceByUserId" resultType="int">
+        SELECT balance
+        FROM coin_wallets
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findAttemptHistoryByUserId"
+            resultType="com.roommade.domain.quiz.dto.response.QuizAttemptHistoryResponse">
+        SELECT uqa.quiz_date,
+               uqa.quiz_question_id,
+               qq.question,
+               uqa.is_correct AS correct,
+               CASE WHEN uqa.is_correct THEN 50 ELSE 0 END AS earned_point
+        FROM user_quiz_attempts uqa
+        INNER JOIN quiz_questions qq ON qq.id = uqa.quiz_question_id
+        WHERE uqa.user_id = #{userId}
+        ORDER BY uqa.quiz_date DESC
+    </select>
+
+</mapper>
