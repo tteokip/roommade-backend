@@ -15,7 +15,15 @@ public enum PreparationErrorCode implements ErrorCode {
     DEPOSIT_NOT_CALCULABLE(
             HttpStatus.UNPROCESSABLE_ENTITY,
             "PREPARATION_006",
-            "목표 보증금은 0보다 크고 현재 보증금은 0 이상이어야 합니다.");
+            "목표 보증금은 0보다 크고 현재 보증금은 0 이상이어야 합니다."),
+    INDEPENDENCE_PROGRESS_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "PREPARATION_009",
+            "자립 준비 진행 정보를 찾을 수 없습니다."),
+    HOUSE_ALREADY_CONFIRMED(
+            HttpStatus.CONFLICT,
+            "PREPARATION_010",
+            "이미 집을 확정했습니다.");
 
     private final HttpStatus status;
     private final String code;

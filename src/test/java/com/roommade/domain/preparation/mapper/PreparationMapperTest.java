@@ -118,6 +118,54 @@ class PreparationMapperTest {
         assertThat(result).isEqualTo(confirmedAt);
     }
 
+    @Test
+    @DisplayName("등록 매물 확정 시 매물 ID와 완료 시간을 한 번만 기록한다")
+    void updatesComparisonHouseConfirmationOnlyOnce() {
+        insertUser(9_940_007_001L);
+        insertIndependenceProgress(9_960_007_001L, 9_940_007_001L, 0L);
+        insertComparison(9_970_007_001L, 9_940_007_001L);
+        insertHouse(9_980_007_001L, 9_970_007_001L, "A");
+
+        int firstUpdatedRows =
+                preparationMapper.updateHouseConfirmation(9_940_007_001L, 9_980_007_001L);
+        int secondUpdatedRows =
+                preparationMapper.updateHouseConfirmation(9_940_007_001L, 9_980_007_001L);
+
+        assertThat(firstUpdatedRows).isEqualTo(1);
+        assertThat(secondUpdatedRows).isZero();
+        assertThat(preparationMapper.findHouseConfirmedAtByUserId(9_940_007_001L)).isNotNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT confirmed_house_id FROM independence_progress WHERE user_id = ?",
+                Long.class,
+                9_940_007_001L)).isEqualTo(9_980_007_001L);
+    }
+
+    @Test
+    @DisplayName("다른 집 확정 시 매물 ID 없이 완료 시간만 기록한다")
+    void updatesOtherHouseConfirmationWithoutHouseId() {
+        insertUser(9_940_008_001L);
+        insertIndependenceProgress(9_960_008_001L, 9_940_008_001L, 0L);
+
+        int updatedRows = preparationMapper.updateHouseConfirmation(9_940_008_001L, null);
+
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(preparationMapper.findHouseConfirmedAtByUserId(9_940_008_001L)).isNotNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT confirmed_house_id IS NULL FROM independence_progress WHERE user_id = ?",
+                Boolean.class,
+                9_940_008_001L)).isTrue();
+    }
+
+    @Test
+    @DisplayName("자립 준비 진행 데이터 존재 여부를 조회한다")
+    void checksIndependenceProgressExistence() {
+        insertUser(9_940_009_001L);
+        insertIndependenceProgress(9_960_009_001L, 9_940_009_001L, 0L);
+
+        assertThat(preparationMapper.existsIndependenceProgressByUserId(9_940_009_001L)).isTrue();
+        assertThat(preparationMapper.existsIndependenceProgressByUserId(999_999L)).isFalse();
+    }
+
     private void insertUser(long id) {
         jdbcTemplate.update(
                 "INSERT INTO users (id, email, password_hash, created_at, updated_at) "
@@ -143,6 +191,18 @@ class PreparationMapperTest {
                 "INSERT INTO independence_progress (id, user_id, current_deposit) "
                         + "VALUES (?, ?, ?)",
                 id, userId, currentDeposit);
+    }
+
+    private void insertComparison(long id, long userId) {
+        jdbcTemplate.update(
+                "INSERT INTO house_comparisons (id, user_id) VALUES (?, ?)",
+                id, userId);
+    }
+
+    private void insertHouse(long id, long comparisonId, String houseType) {
+        jdbcTemplate.update(
+                "INSERT INTO houses (id, comparison_id, house_type) VALUES (?, ?, ?)",
+                id, comparisonId, houseType);
     }
 
 }

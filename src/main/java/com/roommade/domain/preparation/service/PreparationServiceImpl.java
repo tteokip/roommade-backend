@@ -151,6 +151,21 @@ public class PreparationServiceImpl implements PreparationService {
         preparationMapper.markHouseComparisonCompleted(userId);
     }
 
+    /** 사용자 집 확정 매물 및 독립 후 전환 시간 기록. */
+    @Override
+    @Transactional
+    public LocalDateTime confirmHouse(Long userId, Long confirmedHouseId) {
+        int updatedRows = preparationMapper.updateHouseConfirmation(userId, confirmedHouseId);
+        if (updatedRows == 0) {
+            if (!preparationMapper.existsIndependenceProgressByUserId(userId)) {
+                throw new BusinessException(
+                        PreparationErrorCode.INDEPENDENCE_PROGRESS_NOT_FOUND);
+            }
+            throw new BusinessException(PreparationErrorCode.HOUSE_ALREADY_CONFIRMED);
+        }
+        return preparationMapper.findHouseConfirmedAtByUserId(userId);
+    }
+
     /** 보증금 계산에 필요한 목표 금액과 현재 마련 금액 유효성 검증. */
     private void validateDepositProgress(DepositProgressSourceResponse source) {
         if (source.getTargetDepositWon() == null

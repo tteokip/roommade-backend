@@ -123,6 +123,24 @@ class HouseComparisonMapperTest {
     }
 
     @Test
+    @DisplayName("사용자에게 등록된 매물만 확정 대상으로 조회한다")
+    void checksHouseOwnershipForConfirmation() {
+        insertUser(910_013L);
+        insertUser(910_014L);
+        insertComparison(920_013L, 910_013L, LocalDateTime.now());
+        insertComparison(920_014L, 910_014L, LocalDateTime.now());
+        insertHouse(930_013L, 920_013L, "A", "본인 매물");
+        insertHouse(930_014L, 920_014L, "A", "타인 매물");
+
+        assertThat(houseComparisonMapper.existsHouseByIdAndUserId(930_013L, 910_013L))
+                .isTrue();
+        assertThat(houseComparisonMapper.existsHouseByIdAndUserId(930_014L, 910_013L))
+                .isFalse();
+        assertThat(houseComparisonMapper.existsHouseByIdAndUserId(999_999L, 910_013L))
+                .isFalse();
+    }
+
+    @Test
     @DisplayName("매물 등록 순서와 관계없이 유형에 따라 A와 B를 매핑한다")
     void mapsByHouseTypeRegardlessOfInsertOrder() {
         insertUser(910_009L);
