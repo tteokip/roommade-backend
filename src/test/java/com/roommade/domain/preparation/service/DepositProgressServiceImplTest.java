@@ -35,12 +35,12 @@ class DepositProgressServiceImplTest {
 
         DepositProgressResponse result = preparationService.getDepositProgress(userId);
 
-        assertThat(result.getTargetDepositWon()).isEqualTo(50_000_000L);
-        assertThat(result.getCurrentDepositWon()).isEqualTo(35_123_456L);
+        assertThat(result.getTargetDeposit()).isEqualTo(50_000_000L);
+        assertThat(result.getCurrentDeposit()).isEqualTo(35_123_456L);
         assertThat(result.getAchievementRate()).isEqualByComparingTo("70.25");
         assertThat(result.getScore()).isEqualByComparingTo("31.61");
         assertThat(result.getMaxScore()).isEqualTo(45);
-        assertThat(result.getRemainingDepositWon()).isEqualTo(14_876_544L);
+        assertThat(result.getRemainingDeposit()).isEqualTo(14_876_544L);
         verify(preparationMapper).findDepositProgressByUserId(userId);
     }
 
@@ -54,7 +54,7 @@ class DepositProgressServiceImplTest {
 
         assertThat(result.getAchievementRate()).isEqualByComparingTo("0.00");
         assertThat(result.getScore()).isEqualByComparingTo("0.00");
-        assertThat(result.getRemainingDepositWon()).isEqualTo(50_000_000L);
+        assertThat(result.getRemainingDeposit()).isEqualTo(50_000_000L);
     }
 
     @Test
@@ -67,7 +67,7 @@ class DepositProgressServiceImplTest {
 
         assertThat(result.getAchievementRate()).isEqualByComparingTo("100.00");
         assertThat(result.getScore()).isEqualByComparingTo("45.00");
-        assertThat(result.getRemainingDepositWon()).isZero();
+        assertThat(result.getRemainingDeposit()).isZero();
     }
 
     @Test
@@ -78,10 +78,10 @@ class DepositProgressServiceImplTest {
 
         DepositProgressResponse result = preparationService.getDepositProgress(1L);
 
-        assertThat(result.getCurrentDepositWon()).isEqualTo(60_000_000L);
+        assertThat(result.getCurrentDeposit()).isEqualTo(60_000_000L);
         assertThat(result.getAchievementRate()).isEqualByComparingTo("100.00");
         assertThat(result.getScore()).isEqualByComparingTo("45.00");
-        assertThat(result.getRemainingDepositWon()).isZero();
+        assertThat(result.getRemainingDeposit()).isZero();
     }
 
     @Test

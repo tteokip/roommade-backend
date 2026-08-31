@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RirProfileResponse {
 
+    /** 원 단위 월 소득. */
     private Long monthlyIncome;
+
+    /** 원 단위 월세 상한. */
     private Long monthlyRentLimit;
 }
