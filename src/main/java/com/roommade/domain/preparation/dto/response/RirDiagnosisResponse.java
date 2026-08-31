@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/** 금액 필드는 원 단위로 반환한다. */
 @Getter
 @AllArgsConstructor
 public class RirDiagnosisResponse {
@@ -14,14 +15,14 @@ public class RirDiagnosisResponse {
         SEVERE  // RIR 50% 이상
     }
 
-    private Long monthlyIncomeWon;
-    private Long expectedMonthlyRentWon;
+    private Long monthlyIncome;
+    private Long expectedMonthlyRent;
     private BigDecimal rirPercent;
     private BigDecimal achievementRate;
     private BigDecimal score;
     private Integer maxScore;
     private Integer targetRirPercent;
     private Status status;
-    private Long targetMonthlyRentWon;
-    private Long requiredRentReductionWon;
+    private Long targetMonthlyRent;
+    private Long requiredRentReduction;
 }

@@ -64,16 +64,16 @@ class PreparationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value("PREPARATION_001"))
-                .andExpect(jsonPath("$.data.monthlyIncomeWon").value(1_870_000))
-                .andExpect(jsonPath("$.data.expectedMonthlyRentWon").value(650_000))
+                .andExpect(jsonPath("$.data.monthlyIncome").value(1_870_000))
+                .andExpect(jsonPath("$.data.expectedMonthlyRent").value(650_000))
                 .andExpect(jsonPath("$.data.rirPercent").value(34.76))
                 .andExpect(jsonPath("$.data.achievementRate").value(76.20))
                 .andExpect(jsonPath("$.data.score").value(34.29))
                 .andExpect(jsonPath("$.data.maxScore").value(45))
                 .andExpect(jsonPath("$.data.targetRirPercent").value(30))
                 .andExpect(jsonPath("$.data.status").value("EXCESSIVE"))
-                .andExpect(jsonPath("$.data.targetMonthlyRentWon").value(561_000))
-                .andExpect(jsonPath("$.data.requiredRentReductionWon").value(89_000));
+                .andExpect(jsonPath("$.data.targetMonthlyRent").value(561_000))
+                .andExpect(jsonPath("$.data.requiredRentReduction").value(89_000));
     }
 
     @Test
@@ -105,12 +105,12 @@ class PreparationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value("PREPARATION_004"))
-                .andExpect(jsonPath("$.data.targetDepositWon").value(50_000_000))
-                .andExpect(jsonPath("$.data.currentDepositWon").value(35_123_456))
+                .andExpect(jsonPath("$.data.targetDeposit").value(50_000_000))
+                .andExpect(jsonPath("$.data.currentDeposit").value(35_123_456))
                 .andExpect(jsonPath("$.data.achievementRate").value(70.25))
                 .andExpect(jsonPath("$.data.score").value(31.61))
                 .andExpect(jsonPath("$.data.maxScore").value(45))
-                .andExpect(jsonPath("$.data.remainingDepositWon").value(14_876_544))
+                .andExpect(jsonPath("$.data.remainingDeposit").value(14_876_544))
                 .andExpect(jsonPath("$.data.completed").doesNotExist());
     }
 

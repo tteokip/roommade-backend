@@ -39,12 +39,12 @@ class PreparationMapperTest {
     @DisplayName("사용자 프로필의 월 소득과 월세 상한을 조회한다")
     void findsRirProfileByUserId() {
         insertUser(940_001L);
-        insertUserProfile(950_001L, 940_001L, 187L, 0L, 65L);
+        insertUserProfile(950_001L, 940_001L, 1_870_000L, 0L, 650_000L);
 
         RirProfileResponse result = preparationMapper.findRirProfileByUserId(940_001L);
 
-        assertThat(result.getMonthlyIncome()).isEqualTo(187L);
-        assertThat(result.getMonthlyRentLimit()).isEqualTo(65L);
+        assertThat(result.getMonthlyIncome()).isEqualTo(1_870_000L);
+        assertThat(result.getMonthlyRentLimit()).isEqualTo(650_000L);
     }
 
     @Test
@@ -61,21 +61,21 @@ class PreparationMapperTest {
     @DisplayName("사용자 목표 보증금과 현재 마련 금액을 원 단위로 조회한다")
     void findsDepositProgressByUserId() {
         insertUser(940_003L);
-        insertUserProfile(950_003L, 940_003L, 187L, 50_000_000L, 65L);
+        insertUserProfile(950_003L, 940_003L, 1_870_000L, 50_000_000L, 650_000L);
         insertIndependenceProgress(960_003L, 940_003L, 35_123_456L);
 
         DepositProgressSourceResponse result =
                 preparationMapper.findDepositProgressByUserId(940_003L);
 
-        assertThat(result.getTargetDepositWon()).isEqualTo(50_000_000L);
-        assertThat(result.getCurrentDepositWon()).isEqualTo(35_123_456L);
+        assertThat(result.getTargetDeposit()).isEqualTo(50_000_000L);
+        assertThat(result.getCurrentDeposit()).isEqualTo(35_123_456L);
     }
 
     @Test
     @DisplayName("자립 준비 진행 데이터가 없으면 보증금 조회 결과는 null이다")
     void returnsNullWhenIndependenceProgressDoesNotExist() {
         insertUser(940_004L);
-        insertUserProfile(950_004L, 940_004L, 187L, 50_000_000L, 65L);
+        insertUserProfile(950_004L, 940_004L, 1_870_000L, 50_000_000L, 650_000L);
 
         DepositProgressSourceResponse result =
                 preparationMapper.findDepositProgressByUserId(940_004L);
