@@ -1,5 +1,6 @@
 package com.roommade.domain.living.service;
 
+import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.living.code.LivingErrorCode;
 import com.roommade.domain.living.dto.response.EmergencyFundResponse;
 import com.roommade.domain.living.mapper.EmergencyFundMapper;
@@ -15,7 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class EmergencyFundServiceImpl implements EmergencyFundService {
 
+    private static final int ACHIEVEMENT_REWARD_COIN = 1000;
+
     private final EmergencyFundMapper emergencyFundMapper;
+    private final CoinService coinService;
 
     @Override
     public EmergencyFundResponse getEmergencyFund(Long userId) {
@@ -43,7 +47,7 @@ public class EmergencyFundServiceImpl implements EmergencyFundService {
         }
 
         if (!wasAlreadyAchieved && achievedAt != null) {
-            // TODO(coin 도메인): 비상금 목표 최초 달성 시 보상 코인 지급 호출
+            coinService.earn(userId, ACHIEVEMENT_REWARD_COIN);
         }
 
         return emergencyFundMapper.findByUserId(userId);
