@@ -22,4 +22,10 @@
         WHERE user_id = #{userId}
     </update>
 
+    <select id="findMonthlyIncomeByUserId" resultType="java.lang.Long">
+        SELECT monthly_income
+        FROM user_profiles
+        WHERE user_id = #{userId}
+    </select>
+
 </mapper>

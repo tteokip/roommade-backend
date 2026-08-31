@@ -3,6 +3,8 @@ package com.roommade.domain.living.service;
 import com.roommade.domain.living.code.LivingErrorCode;
 import com.roommade.domain.living.dto.response.LivingRentResponse;
 import com.roommade.domain.living.mapper.LivingRentMapper;
+import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
+import com.roommade.domain.preparation.service.RirCalculator;
 import com.roommade.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LivingRentServiceImpl implements LivingRentService {
 
     private final LivingRentMapper livingRentMapper;
+    private final RirCalculator rirCalculator;
 
     @Override
     @Transactional
@@ -32,5 +35,16 @@ public class LivingRentServiceImpl implements LivingRentService {
         }
 
         return livingRentMapper.findByUserId(userId);
+    }
+
+    @Override
+    public RirDiagnosisResponse getRirDiagnosis(Long userId) {
+        LivingRentResponse rent = livingRentMapper.findByUserId(userId);
+        if (rent == null) {
+            throw new BusinessException(LivingErrorCode.RENT_NOT_SET);
+        }
+
+        Long monthlyIncome = livingRentMapper.findMonthlyIncomeByUserId(userId);
+        return rirCalculator.calculate(monthlyIncome, rent.getMonthlyRent());
     }
 }

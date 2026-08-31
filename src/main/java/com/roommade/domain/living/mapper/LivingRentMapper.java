@@ -12,4 +12,6 @@ public interface LivingRentMapper {
     void insert(@Param("userId") Long userId, @Param("monthlyRent") Long monthlyRent);
 
     void updateRent(@Param("userId") Long userId, @Param("monthlyRent") Long monthlyRent);
+
+    Long findMonthlyIncomeByUserId(@Param("userId") Long userId);
 }

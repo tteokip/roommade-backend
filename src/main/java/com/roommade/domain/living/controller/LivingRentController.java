@@ -5,10 +5,12 @@ import com.roommade.domain.living.code.LivingSuccessCode;
 import com.roommade.domain.living.dto.request.MonthlyRentRequest;
 import com.roommade.domain.living.dto.response.LivingRentResponse;
 import com.roommade.domain.living.service.LivingRentService;
+import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.global.exception.BusinessException;
 import com.roommade.global.response.ApiResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -32,6 +34,14 @@ public class LivingRentController {
         validateUserId(userId);
         LivingRentResponse response = livingRentService.setMonthlyRent(userId, request.getMonthlyRent());
         return ApiResponse.success(LivingSuccessCode.LIVING_RENT_UPDATED, response);
+    }
+
+    @GetMapping("/rir")
+    public ApiResponse<RirDiagnosisResponse> getRirDiagnosis(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        validateUserId(userId);
+        RirDiagnosisResponse response = livingRentService.getRirDiagnosis(userId);
+        return ApiResponse.success(LivingSuccessCode.RIR_DIAGNOSIS_FOUND, response);
     }
 
     private void validateUserId(Long userId) {
