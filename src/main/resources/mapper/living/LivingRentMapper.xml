@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.living.mapper.LivingRentMapper">
+
+    <select id="findByUserId" resultType="com.roommade.domain.living.dto.response.LivingRentResponse">
+        SELECT
+            monthly_rent AS monthlyRent
+        FROM living_rents
+        WHERE user_id = #{userId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO living_rents (user_id, monthly_rent)
+        VALUES (#{userId}, #{monthlyRent})
+    </insert>
+
+    <update id="updateRent">
+        UPDATE living_rents
+        SET monthly_rent = #{monthlyRent}
+        WHERE user_id = #{userId}
+    </update>
+
+    <select id="findMonthlyIncomeByUserId" resultType="java.lang.Long">
+        SELECT monthly_income
+        FROM user_profiles
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>
