@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.living.dto.response.EmergencyFundResponse;
 import com.roommade.domain.living.mapper.EmergencyFundMapper;
 import java.time.LocalDateTime;
@@ -21,6 +23,9 @@ class EmergencyFundServiceImplTest {
 
     @Mock
     private EmergencyFundMapper emergencyFundMapper;
+
+    @Mock
+    private CoinService coinService;
 
     @InjectMocks
     private EmergencyFundServiceImpl emergencyFundService;
@@ -90,6 +95,7 @@ class EmergencyFundServiceImplTest {
         emergencyFundService.setTarget(userId, 300_000L);
 
         verify(emergencyFundMapper).updateTarget(eq(userId), eq(300_000L), notNull());
+        verify(coinService).earn(userId, 1000);
     }
 
     @Test
@@ -105,5 +111,6 @@ class EmergencyFundServiceImplTest {
         emergencyFundService.setTarget(userId, 800_000L);
 
         verify(emergencyFundMapper).updateTarget(userId, 800_000L, firstAchievedAt);
+        verifyNoInteractions(coinService);
     }
 }
