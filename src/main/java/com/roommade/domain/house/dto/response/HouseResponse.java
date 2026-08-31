@@ -17,7 +17,8 @@ public class HouseResponse {
     private Long maintenanceFee;
     private BigDecimal area;
     private Integer stationWalkMinutes;
-    private Integer commuteMinutes;
+    private Integer commuteMinMinutes;
+    private Integer commuteMaxMinutes;
     private String floorType;
     private String roomStructure;
     private String optionType;

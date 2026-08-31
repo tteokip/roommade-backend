@@ -163,7 +163,7 @@ class HouseComparisonMapperTest {
         Long comparisonId = houseComparisonMapper.findCurrentByUserId(910_010L).getComparisonId();
 
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시 종로구", 20_000L, 60L, 3L, new BigDecimal("25.50"), 5, 20, "저층", "투룸", "냉장고");
+                "서울시 종로구", 20_000L, 60L, 3L, new BigDecimal("25.50"), 5, 18, 22, "저층", "투룸", "냉장고");
         houseComparisonMapper.insertHouse(comparisonId, "A", request);
 
         HouseComparisonCurrentResponse result = houseComparisonMapper.findCurrentByUserId(910_010L);
@@ -175,7 +175,8 @@ class HouseComparisonMapperTest {
         assertThat(result.getHouseA().getMaintenanceFee()).isEqualTo(3L);
         assertThat(result.getHouseA().getArea()).isEqualByComparingTo(new BigDecimal("25.50"));
         assertThat(result.getHouseA().getStationWalkMinutes()).isEqualTo(5);
-        assertThat(result.getHouseA().getCommuteMinutes()).isEqualTo(20);
+        assertThat(result.getHouseA().getCommuteMinMinutes()).isEqualTo(18);
+        assertThat(result.getHouseA().getCommuteMaxMinutes()).isEqualTo(22);
         assertThat(result.getHouseA().getFloorType()).isEqualTo("저층");
         assertThat(result.getHouseA().getRoomStructure()).isEqualTo("투룸");
         assertThat(result.getHouseA().getOptionType()).isEqualTo("냉장고");
@@ -188,7 +189,7 @@ class HouseComparisonMapperTest {
         insertUser(910_012L);
         insertComparison(920_012L, 910_012L, LocalDateTime.now());
         HouseRegisterRequest request = new HouseRegisterRequest(
-                "서울시 서초구", 15_000L, 40L, null, null, null, null, null, null, null);
+                "서울시 서초구", 15_000L, 40L, null, null, null, null, null, null, null, null);
 
         houseComparisonMapper.insertHouse(920_012L, "A", request);
 

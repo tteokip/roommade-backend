@@ -53,7 +53,7 @@ class HouseComparisonControllerTest {
     void returnsCurrentComparisonAsApiResponse() throws Exception {
         HouseResponse houseA = new HouseResponse(
                 10L, "서울시 강남구", 100_000_000L, 500_000L, 50_000L,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
         when(houseComparisonService.getCurrentComparison(eq(USER_ID)))
                 .thenReturn(new HouseComparisonCurrentResponse(1L, houseA, null, false));
 
@@ -90,7 +90,8 @@ class HouseComparisonControllerTest {
                 + "\"maintenanceFee\":50000,"
                 + "\"area\":29.75,"
                 + "\"stationWalkMinutes\":10,"
-                + "\"commuteMinutes\":30,"
+                + "\"commuteMinMinutes\":25,"
+                + "\"commuteMaxMinutes\":35,"
                 + "\"floorType\":\"고층\","
                 + "\"roomStructure\":\"원룸\","
                 + "\"optionType\":\"풀옵션\"}";
@@ -114,7 +115,8 @@ class HouseComparisonControllerTest {
         assertThat(captured.getMaintenanceFee()).isEqualTo(50_000L);
         assertThat(captured.getArea()).isEqualByComparingTo(new BigDecimal("29.75"));
         assertThat(captured.getStationWalkMinutes()).isEqualTo(10);
-        assertThat(captured.getCommuteMinutes()).isEqualTo(30);
+        assertThat(captured.getCommuteMinMinutes()).isEqualTo(25);
+        assertThat(captured.getCommuteMaxMinutes()).isEqualTo(35);
         assertThat(captured.getFloorType()).isEqualTo("고층");
         assertThat(captured.getRoomStructure()).isEqualTo("원룸");
         assertThat(captured.getOptionType()).isEqualTo("풀옵션");
@@ -127,6 +129,45 @@ class HouseComparisonControllerTest {
                         .header("X-User-Id", USER_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verifyNoInteractions(houseComparisonService);
+    }
+
+    @Test
+    @DisplayName("commuteMinMinutes가 commuteMaxMinutes보다 크면 400을 반환하고 Service를 호출하지 않는다")
+    void returnsBadRequestWhenCommuteMinExceedsMax() throws Exception {
+        String requestBody = "{"
+                + "\"location\":\"서울시\","
+                + "\"deposit\":10000000,"
+                + "\"monthlyRent\":100000,"
+                + "\"commuteMinMinutes\":40,"
+                + "\"commuteMaxMinutes\":30}";
+
+        mockMvc.perform(post("/api/house-comparisons/current/houses/A")
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+
+        verifyNoInteractions(houseComparisonService);
+    }
+
+    @Test
+    @DisplayName("commuteMinMinutes만 있고 commuteMaxMinutes가 없으면 400을 반환한다")
+    void returnsBadRequestWhenOnlyCommuteMinIsProvided() throws Exception {
+        String requestBody = "{"
+                + "\"location\":\"서울시\","
+                + "\"deposit\":10000000,"
+                + "\"monthlyRent\":100000,"
+                + "\"commuteMinMinutes\":30}";
+
+        mockMvc.perform(post("/api/house-comparisons/current/houses/A")
+                        .header("X-User-Id", USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
 

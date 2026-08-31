@@ -48,7 +48,7 @@ class HouseBalanceGameServiceImplTest {
     private HouseBalanceGameServiceImpl houseBalanceGameService;
 
     @Test
-    @DisplayName("commuteMinutes가 없으면 Q1/Q5를 제외하고 다음 순서의 대체 질문으로 채운다")
+    @DisplayName("통근시간 범위가 없으면 Q1/Q5를 제외하고 다음 순서의 대체 질문으로 채운다")
     void excludesQuestionsRequiringMissingCommuteAndFillsWithSubstitutes() {
         HouseResponse houseA = house(
                 120_000_000L, 500_000L, 50_000L, new BigDecimal("30.00"), 10, null, "부분옵션");
@@ -142,6 +142,76 @@ class HouseBalanceGameServiceImplTest {
         assertThat(result.getSelectedFactors()).containsEntry(ComparisonFactor.OPTION, 1);
         assertThat(result.getHouseBScore()).isEqualTo(1);
         assertThat(result.getResult()).isEqualTo("B");
+    }
+
+    @Test
+    @DisplayName("통근시간 최소·최대가 모두 5분 이상 짧으면 A가 우세하다")
+    void commuteRangeWithMeaningfullyLowerEndpointsWins() {
+        // DEPOSIT과 COMMUTE만 비교 가능하도록 나머지 요소는 동일하게 맞춰 Q9만 출제되게 한다.
+        HouseResponse houseA = house4Range(
+                100_000_000L, 500_000L, 50_000L, new BigDecimal("25.00"), 5, 10, 15, "풀옵션");
+        HouseResponse houseB = house4Range(
+                90_000_000L, 500_000L, 50_000L, new BigDecimal("25.00"), 5, 20, 25, "풀옵션");
+        givenComparison(houseA, houseB);
+        givenAnswers(new PreferenceAnswerResponse(9L, "B")); // DEPOSIT↔COMMUTE 중 COMMUTE 선택
+
+        BalanceGameResultResponse result = houseBalanceGameService.getResult(USER_ID);
+
+        assertThat(result.getSelectedFactors()).containsEntry(ComparisonFactor.COMMUTE, 1);
+        assertThat(result.getExcludedFactors())
+                .containsExactly(
+                        ComparisonFactor.MONTHLY_COST,
+                        ComparisonFactor.STATION,
+                        ComparisonFactor.AREA,
+                        ComparisonFactor.OPTION);
+        assertThat(result.getHouseAScore()).isEqualTo(1);
+        assertThat(result.getHouseBScore()).isZero();
+        assertThat(result.getResult()).isEqualTo("A");
+    }
+
+    @Test
+    @DisplayName("통근시간 범위의 최소·최대 우세 방향이 다르면 COMMUTE 질문은 출제되지 않는다")
+    void crossedCommuteRangesExcludeCommuteQuestions() {
+        HouseResponse houseA = house4Range(
+                120_000_000L, 500_000L, 50_000L, new BigDecimal("30.00"), 10, 20, 40, "부분옵션");
+        HouseResponse houseB = house4Range(
+                100_000_000L, 650_000L, 0L, new BigDecimal("25.00"), 5, 30, 35, "풀옵션");
+        givenComparison(houseA, houseB);
+        givenAnswers();
+
+        BalanceGameQuestionsResponse response = houseBalanceGameService.getQuestions(USER_ID);
+
+        assertThat(questionIds(response)).doesNotContain(1L, 5L, 9L);
+    }
+
+    @Test
+    @DisplayName("통근시간 범위가 겹쳐도 최소·최대가 모두 짧은 집이 우세하다")
+    void overlappingCommuteRangeWithLowerEndpointsWins() {
+        HouseResponse houseA = house4Range(
+                20_000_000L, 700_000L, 50_000L, new BigDecimal("24.22"), null, 43, 60, "풀옵션");
+        HouseResponse houseB = house4Range(
+                20_000_000L, 1_200_000L, 100_000L, new BigDecimal("18.88"), null, 37, 46, "풀옵션");
+        givenComparison(houseA, houseB);
+        givenAnswers();
+
+        BalanceGameQuestionsResponse response = houseBalanceGameService.getQuestions(USER_ID);
+
+        assertThat(questionIds(response)).contains(1L, 5L);
+    }
+
+    @Test
+    @DisplayName("통근시간 범위의 차이가 5분 미만이면 COMMUTE 질문은 출제되지 않는다")
+    void smallCommuteDifferenceIsNotComparable() {
+        HouseResponse houseA = house4Range(
+                120_000_000L, 500_000L, 50_000L, new BigDecimal("30.00"), 10, 40, 50, "부분옵션");
+        HouseResponse houseB = house4Range(
+                100_000_000L, 650_000L, 0L, new BigDecimal("25.00"), 5, 41, 51, "풀옵션");
+        givenComparison(houseA, houseB);
+        givenAnswers();
+
+        BalanceGameQuestionsResponse response = houseBalanceGameService.getQuestions(USER_ID);
+
+        assertThat(questionIds(response)).doesNotContain(1L, 5L, 9L);
     }
 
     @Test
@@ -386,11 +456,19 @@ class HouseBalanceGameServiceImplTest {
         return house(100_000_000L, 600_000L, 0L, new BigDecimal("25.00"), 5, 20, "풀옵션");
     }
 
+    /** commuteMinutes 하나만 받아 min=max인 범위로 채운다(범위 자체를 테스트하는 곳에서는 house4Range를 쓴다). */
     private HouseResponse house(
             Long deposit, Long monthlyRent, Long maintenanceFee, BigDecimal area,
             Integer stationWalkMinutes, Integer commuteMinutes, String optionType) {
+        return house4Range(deposit, monthlyRent, maintenanceFee, area,
+                stationWalkMinutes, commuteMinutes, commuteMinutes, optionType);
+    }
+
+    private HouseResponse house4Range(
+            Long deposit, Long monthlyRent, Long maintenanceFee, BigDecimal area,
+            Integer stationWalkMinutes, Integer commuteMinMinutes, Integer commuteMaxMinutes, String optionType) {
         return new HouseResponse(1L, "위치", deposit, monthlyRent, maintenanceFee, area,
-                stationWalkMinutes, commuteMinutes, "고층", "원룸", optionType);
+                stationWalkMinutes, commuteMinMinutes, commuteMaxMinutes, "고층", "원룸", optionType);
     }
 
     private List<PreferenceQuestionResponse> allQuestions() {
