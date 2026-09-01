@@ -26,7 +26,10 @@ public enum HouseErrorCode implements ErrorCode {
     HOUSE_NOT_CONFIRMABLE(
             HttpStatus.NOT_FOUND,
             "HOUSE_019",
-            "확정할 수 있는 등록 매물을 찾을 수 없습니다.");
+            "확정할 수 있는 등록 매물을 찾을 수 없습니다."),
+    WORKPLACE_ADDRESS_NOT_SET(HttpStatus.BAD_REQUEST, "HOUSE_021", "직장 주소가 등록되어 있지 않습니다."),
+    COMMUTE_LOCATION_NOT_FOUND(HttpStatus.BAD_REQUEST, "HOUSE_022", "위치를 특정할 수 없어 통근 시간을 계산할 수 없습니다."),
+    COMMUTE_ROUTE_NOT_FOUND(HttpStatus.UNPROCESSABLE_ENTITY, "HOUSE_023", "대중교통 경로를 찾을 수 없어 통근 시간을 계산할 수 없습니다.");
 
     private final HttpStatus status;
     private final String code;

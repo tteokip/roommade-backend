@@ -57,7 +57,6 @@ public class HouseAnalysisServiceImpl implements HouseAnalysisService {
                 extraction.getMaintenanceFee().orElse(null),
                 extraction.getArea().orElse(null),
                 extraction.getStationWalkMinutes().orElse(null),
-                null,
                 extraction.getFloorType().orElse(null),
                 extraction.getRoomStructure().orElse(null),
                 extraction.getOptionType().orElse(null));

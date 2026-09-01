@@ -33,7 +33,7 @@ class HouseAnalysisServiceImplTest {
     private HouseAnalysisServiceImpl houseAnalysisService;
 
     @Test
-    @DisplayName("location/deposit/monthlyRent가 모두 있으면 COMPLETED를 반환하고 commuteMinutes는 항상 null이다")
+    @DisplayName("location/deposit/monthlyRent가 모두 있으면 COMPLETED를 반환한다")
     void returnsCompletedWhenRequiredFieldsArePresent() {
         List<MultipartFile> images = List.of(image("a.jpg", "image/jpeg"));
         when(houseImageAnalysisClient.analyze(images)).thenReturn(new HouseImageExtraction(
@@ -47,7 +47,6 @@ class HouseAnalysisServiceImplTest {
         assertThat(response.getHouse().getLocation()).isEqualTo("서울시 광진구");
         assertThat(response.getHouse().getDeposit()).isEqualTo(10_000_000L);
         assertThat(response.getHouse().getMonthlyRent()).isEqualTo(500_000L);
-        assertThat(response.getHouse().getCommuteMinutes()).isNull();
     }
 
     @Test

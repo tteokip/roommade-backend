@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class HouseBalanceGameServiceImpl implements HouseBalanceGameService {
 
     private static final int MAX_QUESTIONS = 5;
+    private static final int COMMUTE_ADVANTAGE_MINUTES = 5;
     private static final String SELECTED_SIDE_A = "A";
     private static final String SELECTED_SIDE_B = "B";
     private static final Map<String, Integer> OPTION_RANKS =
@@ -176,7 +177,7 @@ public class HouseBalanceGameServiceImpl implements HouseBalanceGameService {
             case MONTHLY_COST:
                 return compareLowerIsBetter(monthlyCost(houseA), monthlyCost(houseB));
             case COMMUTE:
-                return compareLowerIsBetter(houseA.getCommuteMinutes(), houseB.getCommuteMinutes());
+                return compareCommuteRange(houseA, houseB);
             case STATION:
                 return compareLowerIsBetter(houseA.getStationWalkMinutes(), houseB.getStationWalkMinutes());
             case AREA:
@@ -186,6 +187,29 @@ public class HouseBalanceGameServiceImpl implements HouseBalanceGameService {
             default:
                 throw new IllegalStateException("처리할 수 없는 비교 요소입니다: " + factor);
         }
+    }
+
+    /**
+     * 지역 기준 예상치의 작은 차이를 우열로 과장하지 않도록 최소·최대가 모두 5분 이상 짧을
+     * 때만 우세로 판단한다. 한쪽 끝값이라도 기준을 충족하지 않으면 평균으로 임의 판정하지 않는다.
+     */
+    private FactorComparison compareCommuteRange(HouseResponse houseA, HouseResponse houseB) {
+        Integer aMin = houseA.getCommuteMinMinutes();
+        Integer aMax = houseA.getCommuteMaxMinutes();
+        Integer bMin = houseB.getCommuteMinMinutes();
+        Integer bMax = houseB.getCommuteMaxMinutes();
+        if (aMin == null || aMax == null || bMin == null || bMax == null) {
+            return FactorComparison.notComparable();
+        }
+        if ((long) aMin + COMMUTE_ADVANTAGE_MINUTES <= bMin
+                && (long) aMax + COMMUTE_ADVANTAGE_MINUTES <= bMax) {
+            return FactorComparison.comparable(true);
+        }
+        if ((long) bMin + COMMUTE_ADVANTAGE_MINUTES <= aMin
+                && (long) bMax + COMMUTE_ADVANTAGE_MINUTES <= aMax) {
+            return FactorComparison.comparable(false);
+        }
+        return FactorComparison.notComparable();
     }
 
     private Long monthlyCost(HouseResponse house) {

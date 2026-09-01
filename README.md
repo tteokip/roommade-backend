@@ -86,7 +86,14 @@ src/main/webapp/WEB-INF/
    OPENAI_API_KEY=발급받은 키
    ```
 
-   로컬 `appRun`은 이 값을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
+   통근시간 계산 API를 사용하려면 일반 TMAP과 TMAP 대중교통 상품을 모두 구독한 앱 키를
+   `.env`의 `TMAP_API_KEY`에 입력합니다.
+
+   ```env
+   TMAP_API_KEY=발급받은 키
+   ```
+
+   로컬 `appRun`은 이 값들을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
    시크릿으로 주입하며, 실제 키는 Git 추적 파일에 넣지 않습니다.
 
 4. Docker로 로컬 MySQL을 띄우고, 정상 기동(`healthy`)될 때까지 기다립니다.

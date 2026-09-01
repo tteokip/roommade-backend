@@ -12,7 +12,8 @@
         <result property="maintenanceFee" column="maintenance_fee"/>
         <result property="area" column="area"/>
         <result property="stationWalkMinutes" column="station_walk_minutes"/>
-        <result property="commuteMinutes" column="commute_minutes"/>
+        <result property="commuteMinMinutes" column="commute_min_minutes"/>
+        <result property="commuteMaxMinutes" column="commute_max_minutes"/>
         <result property="floorType" column="floor_type"/>
         <result property="roomStructure" column="room_structure"/>
         <result property="optionType" column="option_type"/>
@@ -40,7 +41,8 @@
             ha.maintenance_fee AS house_a_maintenance_fee,
             ha.area AS house_a_area,
             ha.station_walk_minutes AS house_a_station_walk_minutes,
-            ha.commute_minutes AS house_a_commute_minutes,
+            ha.commute_min_minutes AS house_a_commute_min_minutes,
+            ha.commute_max_minutes AS house_a_commute_max_minutes,
             ha.floor_type AS house_a_floor_type,
             ha.room_structure AS house_a_room_structure,
             ha.option_type AS house_a_option_type,
@@ -51,7 +53,8 @@
             hb.maintenance_fee AS house_b_maintenance_fee,
             hb.area AS house_b_area,
             hb.station_walk_minutes AS house_b_station_walk_minutes,
-            hb.commute_minutes AS house_b_commute_minutes,
+            hb.commute_min_minutes AS house_b_commute_min_minutes,
+            hb.commute_max_minutes AS house_b_commute_max_minutes,
             hb.floor_type AS house_b_floor_type,
             hb.room_structure AS house_b_room_structure,
             hb.option_type AS house_b_option_type,
@@ -80,10 +83,12 @@
     <insert id="insertHouse">
         INSERT INTO houses (
             comparison_id, house_type, location, deposit, monthly_rent, maintenance_fee,
-            area, station_walk_minutes, commute_minutes, floor_type, room_structure, option_type
+            area, station_walk_minutes, commute_min_minutes, commute_max_minutes,
+            floor_type, room_structure, option_type
         ) VALUES (
             #{comparisonId}, #{houseType}, #{request.location}, #{request.deposit}, #{request.monthlyRent},
-            #{request.maintenanceFee}, #{request.area}, #{request.stationWalkMinutes}, #{request.commuteMinutes},
+            #{request.maintenanceFee}, #{request.area}, #{request.stationWalkMinutes},
+            #{request.commuteMinMinutes}, #{request.commuteMaxMinutes},
             #{request.floorType}, #{request.roomStructure}, #{request.optionType}
         )
     </insert>

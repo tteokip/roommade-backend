@@ -51,7 +51,7 @@ class HouseAnalysisControllerTest {
         MockMultipartFile image1 = new MockMultipartFile("images", "a.jpg", "image/jpeg", new byte[]{1, 2, 3});
         MockMultipartFile image2 = new MockMultipartFile("images", "b.png", "image/png", new byte[]{4, 5, 6});
         HouseAnalysisResultResponse house = new HouseAnalysisResultResponse(
-                "서울시 광진구", 10_000_000L, 500_000L, 50_000L, null, 7, null, "3층", "원룸", "풀옵션");
+                "서울시 광진구", 10_000_000L, 500_000L, 50_000L, null, 7, "3층", "원룸", "풀옵션");
         when(houseAnalysisService.analyze(anyList()))
                 .thenReturn(new HouseAnalysisResponse(HouseAnalysisStatus.COMPLETED, house));
 
@@ -60,8 +60,7 @@ class HouseAnalysisControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value("HOUSE_005"))
                 .andExpect(jsonPath("$.data.analysisStatus").value("COMPLETED"))
-                .andExpect(jsonPath("$.data.house.location").value("서울시 광진구"))
-                .andExpect(jsonPath("$.data.house.commuteMinutes").doesNotExist());
+                .andExpect(jsonPath("$.data.house.location").value("서울시 광진구"));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<MultipartFile>> captor = ArgumentCaptor.forClass(List.class);

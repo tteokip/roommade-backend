@@ -33,3 +33,6 @@ youth-policy.api.policy-path=${YOUTH_POLICY_PATH:/go/ythip/getPlcy}
 youth-policy.api.key=${YOUTH_POLICY_API_KEY}
 youth-policy.api.page-size=${YOUTH_POLICY_PAGE_SIZE:10}
 youth-policy.api.sync-cron=0 10 3 * * *
+
+# TMAP Open API (지오코딩 + 대중교통 경로, 매물 통근 시간 계산용)
+tmap.api.key=${TMAP_API_KEY:}
