@@ -10,6 +10,7 @@ public class YouthPolicyListResponse {
     private Long youthPolicyId;
     private String policyName;
     private String policyKeyword;
+    private String cardSummary;
     private String providerInstitutionName;
     private LocalDate applicationStartDate;
     private LocalDate applicationEndDate;
