@@ -36,6 +36,8 @@ public class LivingCostServiceImpl implements LivingCostService {
 
         List<DailyLivingCostItemResponse> dailyBreakdown =
                 livingCostMapper.findDailyCostsBetween(userId, thisMonthStart, today);
+        List<DailyLivingCostItemResponse> lastMonthDailyBreakdown =
+                livingCostMapper.findDailyCostsBetween(userId, lastMonthStart, lastMonthEnd);
         Long thisMonthTotal = livingCostMapper.sumDailyCostsBetween(userId, thisMonthStart, today);
         Long sameDayLastMonthTotal =
                 livingCostMapper.sumDailyCostsBetween(userId, lastMonthStart, lastMonthEnd);
@@ -44,7 +46,8 @@ public class LivingCostServiceImpl implements LivingCostService {
                 thisMonthTotal,
                 sameDayLastMonthTotal,
                 thisMonthTotal - sameDayLastMonthTotal,
-                dailyBreakdown);
+                dailyBreakdown,
+                lastMonthDailyBreakdown);
     }
 
     @Override

@@ -12,4 +12,5 @@ public class DailyLivingCostOverviewResponse {
     private Long sameDayLastMonthTotal;
     private Long differenceFromLastMonth;
     private List<DailyLivingCostItemResponse> dailyBreakdown;
+    private List<DailyLivingCostItemResponse> lastMonthDailyBreakdown;
 }
