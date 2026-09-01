@@ -86,6 +86,7 @@
         SELECT yp.youth_policy_id,
                yp.policy_name,
                yp.policy_keyword,
+               COALESCE(ypso.card_summary, yp.policy_description) AS card_summary,
                yp.provider_institution_name,
                yp.application_start_date,
                yp.application_end_date,
@@ -98,6 +99,7 @@
                END AS application_period,
                CASE WHEN yp.application_end_date IS NULL THEN NULL ELSE DATEDIFF(yp.application_end_date, CURDATE()) END AS d_day
         FROM youth_policy yp
+        LEFT JOIN youth_policy_summary_override ypso ON ypso.policy_no = yp.policy_no
         <include refid="activePolicyCondition"/>
         ORDER BY yp.application_end_date IS NULL, yp.application_end_date ASC, yp.youth_policy_id DESC
         LIMIT #{size} OFFSET #{offset}
