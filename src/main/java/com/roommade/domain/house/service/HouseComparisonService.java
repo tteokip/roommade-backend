@@ -8,4 +8,7 @@ public interface HouseComparisonService {
     HouseComparisonCurrentResponse getCurrentComparison(Long userId);
 
     HouseComparisonCurrentResponse registerHouse(Long userId, String houseType, HouseRegisterRequest request);
+
+    /** 매물이 사용자의 비교 대상 매물인지 확인. */
+    boolean isComparisonHouseOwnedByUser(Long userId, Long houseId);
 }

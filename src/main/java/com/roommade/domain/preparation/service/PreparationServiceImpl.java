@@ -135,15 +135,6 @@ public class PreparationServiceImpl implements PreparationService {
         preparationMapper.markHouseComparisonCompleted(userId);
     }
 
-    /** 기존 집 확정 API와의 하위 호환을 위해 오늘 입주로 즉시 전환. */
-    @Override
-    @Transactional
-    public LocalDateTime confirmHouse(Long userId, Long confirmedHouseId) {
-        MoveInStateSourceResponse state =
-                scheduleMoveIn(userId, confirmedHouseId, LocalDate.now(clock));
-        return state.getMovedInAt();
-    }
-
     /** 입주일을 저장하고, 오늘 입주면 전환 시간을 기록하며 미래 입주면 전환 시간(moved_in_at)을 비워 둔다. */
     @Override
     @Transactional

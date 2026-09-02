@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.roommade.domain.house.code.HouseErrorCode;
-import com.roommade.domain.house.mapper.HouseComparisonMapper;
+import com.roommade.domain.house.service.HouseComparisonService;
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest.ConfirmationType;
@@ -38,7 +38,7 @@ class MoveInServiceImplTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 2);
 
     @Mock
-    private HouseComparisonMapper houseComparisonMapper;
+    private HouseComparisonService houseComparisonService;
 
     @Mock
     private PreparationService preparationService;
@@ -60,7 +60,7 @@ class MoveInServiceImplTest {
         LocalDate moveInDate = TODAY.plusDays(7);
         MoveInConfirmRequest request =
                 new MoveInConfirmRequest(ConfirmationType.COMPARISON, HOUSE_ID, moveInDate);
-        when(houseComparisonMapper.existsHouseByIdAndUserId(HOUSE_ID, USER_ID))
+        when(houseComparisonService.isComparisonHouseOwnedByUser(USER_ID, HOUSE_ID))
                 .thenReturn(true);
         when(preparationService.scheduleMoveIn(USER_ID, HOUSE_ID, moveInDate))
                 .thenReturn(new MoveInStateSourceResponse(moveInDate, null));
@@ -87,7 +87,7 @@ class MoveInServiceImplTest {
 
         assertThat(result.getConfirmedHouseId()).isNull();
         assertThat(result.isManualRentInputRequired()).isTrue();
-        verifyNoInteractions(houseComparisonMapper);
+        verifyNoInteractions(houseComparisonService);
     }
 
     @Test
@@ -116,7 +116,7 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.MOVE_IN_DATE_IN_PAST);
 
-        verifyNoInteractions(houseComparisonMapper, preparationService);
+        verifyNoInteractions(houseComparisonService, preparationService);
     }
 
     @Test
@@ -130,7 +130,7 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
 
-        verifyNoInteractions(houseComparisonMapper, preparationService);
+        verifyNoInteractions(houseComparisonService, preparationService);
     }
 
     @Test
@@ -144,7 +144,7 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
 
-        verifyNoInteractions(houseComparisonMapper, preparationService);
+        verifyNoInteractions(houseComparisonService, preparationService);
     }
 
     @Test
@@ -152,7 +152,7 @@ class MoveInServiceImplTest {
         LocalDate moveInDate = TODAY.plusDays(1);
         MoveInConfirmRequest request =
                 new MoveInConfirmRequest(ConfirmationType.COMPARISON, HOUSE_ID, moveInDate);
-        when(houseComparisonMapper.existsHouseByIdAndUserId(HOUSE_ID, USER_ID))
+        when(houseComparisonService.isComparisonHouseOwnedByUser(USER_ID, HOUSE_ID))
                 .thenReturn(false);
 
         assertThatThrownBy(() -> moveInService.confirmMoveIn(USER_ID, request))

@@ -1,7 +1,7 @@
 package com.roommade.domain.preparation.service;
 
 import com.roommade.domain.house.code.HouseErrorCode;
-import com.roommade.domain.house.mapper.HouseComparisonMapper;
+import com.roommade.domain.house.service.HouseComparisonService;
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest.ConfirmationType;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class MoveInServiceImpl implements MoveInService {
 
-    private final HouseComparisonMapper houseComparisonMapper;
+    private final HouseComparisonService houseComparisonService;
     private final PreparationService preparationService;
     private final Clock clock;
 
@@ -66,7 +66,7 @@ public class MoveInServiceImpl implements MoveInService {
         if (houseId == null) {
             throw new BusinessException(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
         }
-        if (!houseComparisonMapper.existsHouseByIdAndUserId(houseId, userId)) {
+        if (!houseComparisonService.isComparisonHouseOwnedByUser(userId, houseId)) {
             throw new BusinessException(HouseErrorCode.HOUSE_NOT_CONFIRMABLE);
         }
         return houseId;

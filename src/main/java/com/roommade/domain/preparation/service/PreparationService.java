@@ -6,7 +6,6 @@ import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public interface PreparationService {
 
@@ -24,9 +23,6 @@ public interface PreparationService {
 
     /** 사용자 최초 비교 매물 등록 완료 기록. */
     void markHouseComparisonCompleted(Long userId);
-
-    /** 기존 집 확정 API와의 하위 호환을 위해 오늘 입주로 즉시 전환. */
-    LocalDateTime confirmHouse(Long userId, Long confirmedHouseId);
 
     /** 입주일을 저장하고, 오늘 입주면 즉시 전환하며 미래 입주면 예정 상태로 유지. */
     MoveInStateSourceResponse scheduleMoveIn(

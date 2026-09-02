@@ -141,4 +141,19 @@ class HouseComparisonServiceImplTest {
         verifyNoInteractions(preparationService);
     }
 
+    @Test
+    @DisplayName("사용자의 비교 대상 매물이면 true를 반환한다")
+    void returnsWhetherHouseBelongsToUserComparison() {
+        Long userId = 1L;
+        Long houseId = 10L;
+        when(houseComparisonMapper.existsHouseByIdAndUserId(houseId, userId))
+                .thenReturn(true);
+
+        boolean result =
+                houseComparisonService.isComparisonHouseOwnedByUser(userId, houseId);
+
+        assertThat(result).isTrue();
+        verify(houseComparisonMapper).existsHouseByIdAndUserId(houseId, userId);
+    }
+
 }
