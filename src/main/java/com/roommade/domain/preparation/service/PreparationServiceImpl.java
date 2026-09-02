@@ -4,6 +4,8 @@ import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
+import com.roommade.domain.preparation.dto.response.IndependenceStatus;
+import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
@@ -11,7 +13,10 @@ import com.roommade.domain.preparation.mapper.PreparationMapper;
 import com.roommade.global.exception.BusinessException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,9 +32,9 @@ public class PreparationServiceImpl implements PreparationService {
     private static final BigDecimal DEPOSIT_SCORE_WEIGHT = new BigDecimal("0.45");
     private static final int MAX_SCORE = 45;
     private static final int HOUSE_COMPARISON_MAX_SCORE = 10;
-
     private final PreparationMapper preparationMapper;
     private final RirCalculator rirCalculator;
+    private final Clock clock;
 
     /** 사용자 프로필 조회 및 RIR 진단 결과 생성. */
     @Override
@@ -100,7 +105,11 @@ public class PreparationServiceImpl implements PreparationService {
                 .add(deposit.getScore())
                 .add(BigDecimal.valueOf(houseComparison.getHouseComparisonScore()));
 
-        if (preparationMapper.findHouseConfirmedAtByUserId(userId) != null) {
+        MoveInStateSourceResponse moveInState =
+                preparationMapper.findMoveInStateByUserId(userId);
+        LocalDate moveInDate = moveInState == null ? null : moveInState.getMoveInDate();
+        LocalDateTime movedInAt = moveInState == null ? null : moveInState.getMovedInAt();
+        if (movedInAt != null) {
             readinessScore = BigDecimal.valueOf(maxScore)
                     .setScale(RESPONSE_SCALE, RoundingMode.HALF_UP);
         }
@@ -113,7 +122,10 @@ public class PreparationServiceImpl implements PreparationService {
                 deposit.getScore(),
                 deposit.getMaxScore(),
                 houseComparison.getHouseComparisonScore(),
-                houseComparison.getMaxScore());
+                houseComparison.getMaxScore(),
+                moveInDate,
+                movedInAt,
+                IndependenceStatus.from(moveInDate, movedInAt));
     }
 
     /** 사용자 최초 비교 매물 등록 완료 시간 기록. */
@@ -123,19 +135,43 @@ public class PreparationServiceImpl implements PreparationService {
         preparationMapper.markHouseComparisonCompleted(userId);
     }
 
-    /** 사용자 집 확정 매물 및 독립 후 전환 시간 기록. */
+    /** 기존 집 확정 API와의 하위 호환을 위해 오늘 입주로 즉시 전환. */
     @Override
     @Transactional
     public LocalDateTime confirmHouse(Long userId, Long confirmedHouseId) {
-        int updatedRows = preparationMapper.updateHouseConfirmation(userId, confirmedHouseId);
+        MoveInStateSourceResponse state =
+                scheduleMoveIn(userId, confirmedHouseId, LocalDate.now(clock));
+        return state.getMovedInAt();
+    }
+
+    /** 입주일을 저장하고, 오늘 입주면 전환 시간을 기록하며 미래 입주면 전환 시간(moved_in_at)을 비워 둔다. */
+    @Override
+    @Transactional
+    public MoveInStateSourceResponse scheduleMoveIn(
+            Long userId, Long confirmedHouseId, LocalDate moveInDate) {
+        ZonedDateTime now = ZonedDateTime.now(clock);
+        LocalDateTime movedInAt = moveInDate.isAfter(now.toLocalDate())
+                ? null
+                : now.toLocalDateTime();
+        int updatedRows = preparationMapper.updateMoveInSchedule(
+                userId, confirmedHouseId, moveInDate, movedInAt);
         if (updatedRows == 0) {
             if (!preparationMapper.existsIndependenceProgressByUserId(userId)) {
                 throw new BusinessException(
                         PreparationErrorCode.INDEPENDENCE_PROGRESS_NOT_FOUND);
             }
-            throw new BusinessException(PreparationErrorCode.HOUSE_ALREADY_CONFIRMED);
+            throw new BusinessException(PreparationErrorCode.MOVE_IN_ALREADY_CONFIRMED);
         }
-        return preparationMapper.findHouseConfirmedAtByUserId(userId);
+        return preparationMapper.findMoveInStateByUserId(userId);
+    }
+
+    /** 입주일이 오늘 또는 그 이전이면서 전환 시간이 없는 사용자의 실제 전환 시간을 일괄 기록. */
+    @Override
+    @Transactional
+    public int transitionDueMoveIns() {
+        ZonedDateTime now = ZonedDateTime.now(clock);
+        return preparationMapper.updateDueMoveIns(
+                now.toLocalDate(), now.toLocalDateTime());
     }
 
     /** 보증금 계산에 필요한 목표 금액과 현재 마련 금액 유효성 검증. */

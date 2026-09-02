@@ -20,10 +20,18 @@ public enum PreparationErrorCode implements ErrorCode {
             HttpStatus.NOT_FOUND,
             "PREPARATION_009",
             "자립 준비 진행 정보를 찾을 수 없습니다."),
-    HOUSE_ALREADY_CONFIRMED(
+    MOVE_IN_ALREADY_CONFIRMED(
             HttpStatus.CONFLICT,
             "PREPARATION_010",
-            "이미 집을 확정했습니다.");
+            "이미 입주를 확정했습니다."),
+    INVALID_MOVE_IN_CONFIRMATION(
+            HttpStatus.BAD_REQUEST,
+            "PREPARATION_012",
+            "입주 확정 유형과 매물 정보가 올바르지 않습니다."),
+    MOVE_IN_DATE_IN_PAST(
+            HttpStatus.BAD_REQUEST,
+            "PREPARATION_013",
+            "입주일은 오늘 또는 미래여야 합니다.");
 
     private final HttpStatus status;
     private final String code;

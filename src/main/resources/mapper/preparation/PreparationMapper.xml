@@ -31,10 +31,11 @@
         WHERE user_id = #{userId}
     </select>
 
-    <select id="findHouseConfirmedAtByUserId"
-            resultType="java.time.LocalDateTime">
+    <select id="findMoveInStateByUserId"
+            resultType="com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse">
         SELECT
-            house_confirmed_at
+            move_in_date,
+            moved_in_at
         FROM independence_progress
         WHERE user_id = #{userId}
     </select>
@@ -56,14 +57,24 @@
           AND house_compare_completed_at IS NULL
     </update>
 
-    <update id="updateHouseConfirmation">
+    <update id="updateMoveInSchedule">
         UPDATE independence_progress
         SET
             confirmed_house_id = #{confirmedHouseId, jdbcType=BIGINT},
-            house_confirmed_at = CURRENT_TIMESTAMP,
+            move_in_date = #{moveInDate},
+            moved_in_at = #{movedInAt, jdbcType=TIMESTAMP},
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = #{userId}
-          AND house_confirmed_at IS NULL
+          AND move_in_date IS NULL
+    </update>
+
+    <update id="updateDueMoveIns">
+        UPDATE independence_progress
+        SET
+            moved_in_at = #{movedInAt},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE move_in_date &lt;= #{today}
+          AND moved_in_at IS NULL
     </update>
 
 </mapper>

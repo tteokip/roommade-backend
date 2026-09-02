@@ -4,9 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
+import com.roommade.domain.preparation.dto.response.IndependenceStatus;
+import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
 import com.roommade.domain.preparation.mapper.PreparationMapper;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +42,9 @@ class ReadinessDiagnosisServiceImplTest {
                 .thenReturn(new DepositProgressSourceResponse(50_000_000L, 35_123_456L));
         when(preparationMapper.findHouseComparisonCompletedAtByUserId(USER_ID))
                 .thenReturn(LocalDateTime.of(2026, 8, 30, 16, 30));
-        when(preparationMapper.findHouseConfirmedAtByUserId(USER_ID)).thenReturn(null);
+        LocalDate moveInDate = LocalDate.of(2026, 9, 15);
+        when(preparationMapper.findMoveInStateByUserId(USER_ID))
+                .thenReturn(new MoveInStateSourceResponse(moveInDate, null));
 
         ReadinessDiagnosisResponse response =
                 preparationService.getReadinessDiagnosis(USER_ID);
@@ -52,6 +57,9 @@ class ReadinessDiagnosisServiceImplTest {
         assertThat(response.getDepositMaxScore()).isEqualTo(45);
         assertThat(response.getHouseComparisonScore()).isEqualTo(10);
         assertThat(response.getHouseComparisonMaxScore()).isEqualTo(10);
+        assertThat(response.getMoveInDate()).isEqualTo(moveInDate);
+        assertThat(response.getIndependenceStatus())
+                .isEqualTo(IndependenceStatus.MOVE_IN_SCHEDULED);
     }
 
     @Test
@@ -62,7 +70,7 @@ class ReadinessDiagnosisServiceImplTest {
         when(preparationMapper.findDepositProgressByUserId(USER_ID))
                 .thenReturn(new DepositProgressSourceResponse(50_000_000L, 50_000_000L));
         when(preparationMapper.findHouseComparisonCompletedAtByUserId(USER_ID)).thenReturn(null);
-        when(preparationMapper.findHouseConfirmedAtByUserId(USER_ID)).thenReturn(null);
+        when(preparationMapper.findMoveInStateByUserId(USER_ID)).thenReturn(null);
 
         ReadinessDiagnosisResponse response =
                 preparationService.getReadinessDiagnosis(USER_ID);
@@ -70,18 +78,22 @@ class ReadinessDiagnosisServiceImplTest {
         assertThat(response.getReadinessScore()).isEqualByComparingTo("90.00");
         assertThat(response.getHouseComparisonScore()).isZero();
         assertThat(response.getHouseComparisonMaxScore()).isEqualTo(10);
+        assertThat(response.getIndependenceStatus())
+                .isEqualTo(IndependenceStatus.PREPARING);
     }
 
     @Test
     @DisplayName("집 확정 완료 시 구성 점수는 유지하고 전체 자립 준비도만 100점으로 반환한다")
-    void returnsFullReadinessScoreAfterHouseConfirmation() {
+    void returnsFullReadinessScoreAfterMoveIn() {
         when(preparationMapper.findRirProfileByUserId(USER_ID))
                 .thenReturn(new RirProfileResponse(1_870_000L, 650_000L));
         when(preparationMapper.findDepositProgressByUserId(USER_ID))
                 .thenReturn(new DepositProgressSourceResponse(50_000_000L, 0L));
         when(preparationMapper.findHouseComparisonCompletedAtByUserId(USER_ID)).thenReturn(null);
-        when(preparationMapper.findHouseConfirmedAtByUserId(USER_ID))
-                .thenReturn(LocalDateTime.of(2026, 8, 30, 18, 0));
+        LocalDate moveInDate = LocalDate.of(2026, 8, 30);
+        LocalDateTime movedInAt = LocalDateTime.of(2026, 8, 30, 18, 0);
+        when(preparationMapper.findMoveInStateByUserId(USER_ID))
+                .thenReturn(new MoveInStateSourceResponse(moveInDate, movedInAt));
 
         ReadinessDiagnosisResponse response =
                 preparationService.getReadinessDiagnosis(USER_ID);
@@ -91,5 +103,9 @@ class ReadinessDiagnosisServiceImplTest {
         assertThat(response.getRirScore()).isEqualByComparingTo("34.29");
         assertThat(response.getDepositScore()).isEqualByComparingTo("0.00");
         assertThat(response.getHouseComparisonScore()).isZero();
+        assertThat(response.getMoveInDate()).isEqualTo(moveInDate);
+        assertThat(response.getMovedInAt()).isEqualTo(movedInAt);
+        assertThat(response.getIndependenceStatus())
+                .isEqualTo(IndependenceStatus.MOVED_IN);
     }
 }
