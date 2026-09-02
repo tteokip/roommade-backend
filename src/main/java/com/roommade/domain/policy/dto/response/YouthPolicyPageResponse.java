@@ -7,6 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class YouthPolicyPageResponse {
+    private final String userName;
     private final List<YouthPolicyListResponse> content;
     private final int page;
     private final int size;
