@@ -33,11 +33,12 @@ public class LivingCostServiceImpl implements LivingCostService {
         LocalDate lastMonthStart = lastMonthSameDay.withDayOfMonth(1);
         LocalDate lastMonthEnd = lastMonthSameDay.withDayOfMonth(
                 Math.min(today.getDayOfMonth(), lastMonthSameDay.lengthOfMonth()));
+        LocalDate lastMonthFullEnd = YearMonth.from(lastMonthStart).atEndOfMonth();
 
         List<DailyLivingCostItemResponse> dailyBreakdown =
                 livingCostMapper.findDailyCostsBetween(userId, thisMonthStart, today);
         List<DailyLivingCostItemResponse> lastMonthDailyBreakdown =
-                livingCostMapper.findDailyCostsBetween(userId, lastMonthStart, lastMonthEnd);
+                livingCostMapper.findDailyCostsBetween(userId, lastMonthStart, lastMonthFullEnd);
         Long thisMonthTotal = livingCostMapper.sumDailyCostsBetween(userId, thisMonthStart, today);
         Long sameDayLastMonthTotal =
                 livingCostMapper.sumDailyCostsBetween(userId, lastMonthStart, lastMonthEnd);
