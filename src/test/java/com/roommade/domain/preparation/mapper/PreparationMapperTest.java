@@ -3,7 +3,9 @@ package com.roommade.domain.preparation.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.roommade.domain.preparation.dto.response.DepositProgressSourceResponse;
+import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
 import com.roommade.domain.preparation.dto.response.RirProfileResponse;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,37 +105,46 @@ class PreparationMapperTest {
     }
 
     @Test
-    @DisplayName("사용자 집 확정 완료 시간을 조회한다")
-    void findsHouseConfirmedAtByUserId() {
+    @DisplayName("사용자 입주 예정일과 독립 이후 전환 시간을 조회한다")
+    void findsMoveInStateByUserId() {
         insertUser(940_006L);
         insertIndependenceProgress(960_006L, 940_006L, 0L);
-        LocalDateTime confirmedAt = LocalDateTime.of(2026, 8, 30, 18, 0);
+        LocalDate moveInDate = LocalDate.of(2026, 8, 30);
+        LocalDateTime movedInAt = LocalDateTime.of(2026, 8, 30, 18, 0);
         jdbcTemplate.update(
-                "UPDATE independence_progress SET house_confirmed_at = ? WHERE user_id = ?",
-                confirmedAt, 940_006L);
+                "UPDATE independence_progress SET move_in_date = ?, moved_in_at = ? "
+                        + "WHERE user_id = ?",
+                moveInDate, movedInAt, 940_006L);
 
-        LocalDateTime result =
-                preparationMapper.findHouseConfirmedAtByUserId(940_006L);
+        MoveInStateSourceResponse result =
+                preparationMapper.findMoveInStateByUserId(940_006L);
 
-        assertThat(result).isEqualTo(confirmedAt);
+        assertThat(result.getMoveInDate()).isEqualTo(moveInDate);
+        assertThat(result.getMovedInAt()).isEqualTo(movedInAt);
     }
 
     @Test
-    @DisplayName("등록 매물 확정 시 매물 ID와 완료 시간을 한 번만 기록한다")
-    void updatesComparisonHouseConfirmationOnlyOnce() {
+    @DisplayName("등록 매물 입주 확정 시 매물 ID와 입주 예정일을 한 번만 기록한다")
+    void updatesComparisonHouseMoveInOnlyOnce() {
         insertUser(9_940_007_001L);
         insertIndependenceProgress(9_960_007_001L, 9_940_007_001L, 0L);
         insertComparison(9_970_007_001L, 9_940_007_001L);
         insertHouse(9_980_007_001L, 9_970_007_001L, "A");
+        LocalDate moveInDate = LocalDate.of(2099, 9, 15);
 
         int firstUpdatedRows =
-                preparationMapper.updateHouseConfirmation(9_940_007_001L, 9_980_007_001L);
+                preparationMapper.updateMoveInSchedule(
+                        9_940_007_001L, 9_980_007_001L, moveInDate, null);
         int secondUpdatedRows =
-                preparationMapper.updateHouseConfirmation(9_940_007_001L, 9_980_007_001L);
+                preparationMapper.updateMoveInSchedule(
+                        9_940_007_001L, 9_980_007_001L, moveInDate, null);
 
         assertThat(firstUpdatedRows).isEqualTo(1);
         assertThat(secondUpdatedRows).isZero();
-        assertThat(preparationMapper.findHouseConfirmedAtByUserId(9_940_007_001L)).isNotNull();
+        MoveInStateSourceResponse state =
+                preparationMapper.findMoveInStateByUserId(9_940_007_001L);
+        assertThat(state.getMoveInDate()).isEqualTo(moveInDate);
+        assertThat(state.getMovedInAt()).isNull();
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT confirmed_house_id FROM independence_progress WHERE user_id = ?",
                 Long.class,
@@ -141,19 +152,60 @@ class PreparationMapperTest {
     }
 
     @Test
-    @DisplayName("다른 집 확정 시 매물 ID 없이 완료 시간만 기록한다")
-    void updatesOtherHouseConfirmationWithoutHouseId() {
+    @DisplayName("다른 집 입주 확정 시 매물 ID 없이 입주 정보를 기록한다")
+    void updatesOtherHouseMoveInWithoutHouseId() {
         insertUser(9_940_008_001L);
         insertIndependenceProgress(9_960_008_001L, 9_940_008_001L, 0L);
+        LocalDate moveInDate = LocalDate.of(2026, 9, 15);
+        LocalDateTime movedInAt = LocalDateTime.of(2026, 9, 15, 0, 5);
 
-        int updatedRows = preparationMapper.updateHouseConfirmation(9_940_008_001L, null);
+        int updatedRows = preparationMapper.updateMoveInSchedule(
+                9_940_008_001L, null, moveInDate, movedInAt);
 
         assertThat(updatedRows).isEqualTo(1);
-        assertThat(preparationMapper.findHouseConfirmedAtByUserId(9_940_008_001L)).isNotNull();
+        MoveInStateSourceResponse state =
+                preparationMapper.findMoveInStateByUserId(9_940_008_001L);
+        assertThat(state.getMoveInDate()).isEqualTo(moveInDate);
+        assertThat(state.getMovedInAt()).isEqualTo(movedInAt);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT confirmed_house_id IS NULL FROM independence_progress WHERE user_id = ?",
                 Boolean.class,
                 9_940_008_001L)).isTrue();
+    }
+
+    @Test
+    @DisplayName("입주일이 도래한 미전환 사용자만 독립 이후로 전환한다")
+    void updatesOnlyDueMoveIns() {
+        insertUser(9_940_010_001L);
+        insertUser(9_940_010_002L);
+        insertUser(9_940_010_003L);
+        insertIndependenceProgress(9_960_010_001L, 9_940_010_001L, 0L);
+        insertIndependenceProgress(9_960_010_002L, 9_940_010_002L, 0L);
+        insertIndependenceProgress(9_960_010_003L, 9_940_010_003L, 0L);
+        jdbcTemplate.update(
+                "UPDATE independence_progress SET move_in_date = ? WHERE user_id = ?",
+                LocalDate.of(2026, 9, 1), 9_940_010_001L);
+        jdbcTemplate.update(
+                "UPDATE independence_progress SET move_in_date = ? WHERE user_id = ?",
+                LocalDate.of(2026, 9, 3), 9_940_010_002L);
+        jdbcTemplate.update(
+                "UPDATE independence_progress SET move_in_date = ?, moved_in_at = ? "
+                        + "WHERE user_id = ?",
+                LocalDate.of(2026, 9, 1),
+                LocalDateTime.of(2026, 9, 1, 0, 5),
+                9_940_010_003L);
+        LocalDateTime transitionedAt = LocalDateTime.of(2026, 9, 2, 0, 5);
+
+        int updatedRows = preparationMapper.updateDueMoveIns(
+                LocalDate.of(2026, 9, 2), transitionedAt);
+
+        assertThat(updatedRows).isEqualTo(1);
+        assertThat(preparationMapper.findMoveInStateByUserId(9_940_010_001L)
+                .getMovedInAt()).isEqualTo(transitionedAt);
+        assertThat(preparationMapper.findMoveInStateByUserId(9_940_010_002L)
+                .getMovedInAt()).isNull();
+        assertThat(preparationMapper.findMoveInStateByUserId(9_940_010_003L)
+                .getMovedInAt()).isEqualTo(LocalDateTime.of(2026, 9, 1, 0, 5));
     }
 
     @Test

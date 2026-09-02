@@ -54,6 +54,13 @@
     <tx:annotation-driven transaction-manager="transactionManager"/>
     <task:annotation-driven/>
 
+    <bean id="koreaZoneId" class="java.time.ZoneId" factory-method="of">
+        <constructor-arg value="Asia/Seoul"/>
+    </bean>
+    <bean id="clock" class="java.time.Clock" factory-method="system">
+        <constructor-arg ref="koreaZoneId"/>
+    </bean>
+
     <!-- API 키가 없어도 다른 기능은 기동되도록 지연 생성한다. -->
     <bean id="openAiClient" class="com.openai.client.okhttp.OpenAIOkHttpClient"
           factory-method="fromEnv" lazy-init="true"/>

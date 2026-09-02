@@ -18,7 +18,11 @@ public enum PreparationSuccessCode implements SuccessCode {
     READINESS_DIAGNOSIS_FOUND(
             HttpStatus.OK,
             "PREPARATION_008",
-            "자립 준비도를 조회했습니다.");
+            "자립 준비도를 조회했습니다."),
+    MOVE_IN_CONFIRMED(
+            HttpStatus.CREATED,
+            "PREPARATION_011",
+            "입주를 확정했습니다.");
 
     private final HttpStatus status;
     private final String code;

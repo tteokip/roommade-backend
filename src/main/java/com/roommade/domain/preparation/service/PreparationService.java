@@ -2,9 +2,10 @@ package com.roommade.domain.preparation.service;
 
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
+import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public interface PreparationService {
 
@@ -23,6 +24,10 @@ public interface PreparationService {
     /** 사용자 최초 비교 매물 등록 완료 기록. */
     void markHouseComparisonCompleted(Long userId);
 
-    /** 사용자 집 확정 상태 기록. */
-    LocalDateTime confirmHouse(Long userId, Long confirmedHouseId);
+    /** 입주일을 저장하고, 오늘 입주면 즉시 전환하며 미래 입주면 예정 상태로 유지. */
+    MoveInStateSourceResponse scheduleMoveIn(
+            Long userId, Long confirmedHouseId, LocalDate moveInDate);
+
+    /** 입주일이 도래했지만 아직 전환되지 않은 사용자를 독립 이후 상태로 일괄 전환. */
+    int transitionDueMoveIns();
 }

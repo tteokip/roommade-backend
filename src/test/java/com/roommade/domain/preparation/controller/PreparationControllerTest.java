@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standal
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.response.DepositProgressResponse;
 import com.roommade.domain.preparation.dto.response.HouseComparisonProgressResponse;
+import com.roommade.domain.preparation.dto.response.IndependenceStatus;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse;
 import com.roommade.domain.preparation.dto.response.RirDiagnosisResponse.Status;
@@ -17,6 +18,7 @@ import com.roommade.domain.preparation.service.PreparationService;
 import com.roommade.global.exception.BusinessException;
 import com.roommade.global.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -171,7 +173,10 @@ class PreparationControllerTest {
                 new BigDecimal("31.61"),
                 45,
                 10,
-                10);
+                10,
+                LocalDate.of(2026, 9, 15),
+                null,
+                IndependenceStatus.MOVE_IN_SCHEDULED);
         when(preparationService.getReadinessDiagnosis(eq(USER_ID))).thenReturn(response);
 
         mockMvc.perform(get("/api/preparations/readiness")
@@ -186,6 +191,10 @@ class PreparationControllerTest {
                 .andExpect(jsonPath("$.data.depositScore").value(31.61))
                 .andExpect(jsonPath("$.data.depositMaxScore").value(45))
                 .andExpect(jsonPath("$.data.houseComparisonScore").value(10))
-                .andExpect(jsonPath("$.data.houseComparisonMaxScore").value(10));
+                .andExpect(jsonPath("$.data.houseComparisonMaxScore").value(10))
+                .andExpect(jsonPath("$.data.moveInDate").value("2026-09-15"))
+                .andExpect(jsonPath("$.data.movedInAt").doesNotExist())
+                .andExpect(jsonPath("$.data.independenceStatus")
+                        .value("MOVE_IN_SCHEDULED"));
     }
 }

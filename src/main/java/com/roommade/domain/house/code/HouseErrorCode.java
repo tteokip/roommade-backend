@@ -19,10 +19,6 @@ public enum HouseErrorCode implements ErrorCode {
     BALANCE_GAME_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "HOUSE_014", "현재 매물 정보로 출제 가능한 밸런스게임 질문이 없습니다."),
     BALANCE_GAME_QUESTION_NOT_SERVED(HttpStatus.BAD_REQUEST, "HOUSE_015", "현재 출제된 밸런스게임 질문이 아닙니다."),
     BALANCE_GAME_INCOMPLETE(HttpStatus.BAD_REQUEST, "HOUSE_016", "아직 응답하지 않은 밸런스게임 질문이 있습니다."),
-    INVALID_HOUSE_CONFIRMATION(
-            HttpStatus.BAD_REQUEST,
-            "HOUSE_018",
-            "집 확정 유형과 매물 정보가 올바르지 않습니다."),
     HOUSE_NOT_CONFIRMABLE(
             HttpStatus.NOT_FOUND,
             "HOUSE_019",
