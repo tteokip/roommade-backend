@@ -8,6 +8,7 @@ import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest.Confirma
 import com.roommade.domain.preparation.dto.response.IndependenceStatus;
 import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
 import com.roommade.domain.preparation.dto.response.MoveInConfirmationResponse;
+import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public class MoveInServiceImpl implements MoveInService {
 
     private final HouseComparisonService houseComparisonService;
     private final PreparationService preparationService;
+    private final RoomService roomService;
     private final Clock clock;
 
     @Override
@@ -32,6 +34,7 @@ public class MoveInServiceImpl implements MoveInService {
         Long confirmedHouseId = resolveConfirmedHouseId(userId, request);
         MoveInStateSourceResponse state = preparationService.scheduleMoveIn(
                 userId, confirmedHouseId, request.getMoveInDate());
+        roomService.grantAllBasicFurniture(userId);
 
         return new MoveInConfirmationResponse(
                 confirmedHouseId,
