@@ -15,6 +15,7 @@ import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest.Confirma
 import com.roommade.domain.preparation.dto.response.IndependenceStatus;
 import com.roommade.domain.preparation.dto.response.MoveInConfirmationResponse;
 import com.roommade.domain.preparation.dto.response.MoveInStateSourceResponse;
+import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import java.time.Clock;
 import java.time.Instant;
@@ -42,6 +43,9 @@ class MoveInServiceImplTest {
 
     @Mock
     private PreparationService preparationService;
+
+    @Mock
+    private RoomService roomService;
 
     @Mock
     private Clock clock;
@@ -73,6 +77,7 @@ class MoveInServiceImplTest {
         assertThat(result.getMovedInAt()).isNull();
         assertThat(result.getIndependenceStatus())
                 .isEqualTo(IndependenceStatus.MOVE_IN_SCHEDULED);
+        verify(roomService).grantAllBasicFurniture(USER_ID);
     }
 
     @Test
@@ -88,6 +93,7 @@ class MoveInServiceImplTest {
         assertThat(result.getConfirmedHouseId()).isNull();
         assertThat(result.isManualRentInputRequired()).isTrue();
         verifyNoInteractions(houseComparisonService);
+        verify(roomService).grantAllBasicFurniture(USER_ID);
     }
 
     @Test
@@ -116,7 +122,7 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.MOVE_IN_DATE_IN_PAST);
 
-        verifyNoInteractions(houseComparisonService, preparationService);
+        verifyNoInteractions(houseComparisonService, preparationService, roomService);
     }
 
     @Test
@@ -130,7 +136,7 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
 
-        verifyNoInteractions(houseComparisonService, preparationService);
+        verifyNoInteractions(houseComparisonService, preparationService, roomService);
     }
 
     @Test
@@ -144,7 +150,7 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
 
-        verifyNoInteractions(houseComparisonService, preparationService);
+        verifyNoInteractions(houseComparisonService, preparationService, roomService);
     }
 
     @Test

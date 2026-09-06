@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.room.mapper.RoomMapper">
+
+    <sql id="ownedFurnitureColumns">
+        f.id AS furniture_id,
+        fc.id AS category_id,
+        fc.name AS category_name,
+        f.name,
+        f.asset_url,
+        uf.is_placed AS placed,
+        uf.acquired_at
+    </sql>
+
+    <insert id="insertInitialFurniture">
+        INSERT IGNORE INTO user_furniture (user_id, furniture_id, is_placed)
+        SELECT
+            #{userId},
+            f.id,
+            NOT EXISTS (
+                SELECT 1
+                FROM user_furniture placed_uf
+                INNER JOIN furniture placed_f
+                    ON placed_f.id = placed_uf.furniture_id
+                WHERE placed_uf.user_id = #{userId}
+                  AND placed_uf.is_placed = TRUE
+                  AND placed_f.category_id = f.category_id
+            )
+        FROM furniture f
+        WHERE f.furniture_type = 'BASIC'
+          AND f.unlock_score = 0
+          AND f.active = TRUE
+    </insert>
+
+    <insert id="insertRewardIfAbsent">
+        INSERT IGNORE INTO furniture_reward (user_id, reward_stage)
+        SELECT #{userId}, #{rewardStage}
+        FROM users
+        WHERE id = #{userId}
+    </insert>
+
+    <select id="findOwnedFurnitureByUserId"
+            resultType="com.roommade.domain.room.dto.response.RoomFurnitureResponse">
+        SELECT
+            <include refid="ownedFurnitureColumns"/>
+        FROM user_furniture uf
+        INNER JOIN furniture f ON f.id = uf.furniture_id
+        INNER JOIN furniture_categories fc ON fc.id = f.category_id
+        WHERE uf.user_id = #{userId}
+        ORDER BY fc.id, f.id
+    </select>
+
+    <select id="findOwnedFurnitureById"
+            resultType="com.roommade.domain.room.dto.response.RoomFurnitureResponse">
+        SELECT
+            <include refid="ownedFurnitureColumns"/>
+        FROM user_furniture uf
+        INNER JOIN furniture f ON f.id = uf.furniture_id
+        INNER JOIN furniture_categories fc ON fc.id = f.category_id
+        WHERE uf.user_id = #{userId}
+          AND f.id = #{furnitureId}
+    </select>
+
+    <select id="findPendingRewardsByUserId"
+            resultType="com.roommade.domain.room.dto.response.FurnitureRewardSourceResponse">
+        SELECT
+            id AS reward_id,
+            reward_stage,
+            granted_at
+        FROM furniture_reward
+        WHERE user_id = #{userId}
+          AND selected_furniture_id IS NULL
+          AND claimed_at IS NULL
+        ORDER BY reward_stage
+    </select>
+
+    <select id="findPendingRewardForUpdate"
+            resultType="com.roommade.domain.room.dto.response.FurnitureRewardSourceResponse">
+        SELECT
+            id AS reward_id,
+            reward_stage,
+            granted_at
+        FROM furniture_reward
+        WHERE id = #{rewardId}
+          AND user_id = #{userId}
+          AND selected_furniture_id IS NULL
+          AND claimed_at IS NULL
+        FOR UPDATE
+    </select>
+
+    <select id="findSelectableFurniture"
+            resultType="com.roommade.domain.room.dto.response.FurnitureOptionResponse">
+        SELECT
+            f.id AS furniture_id,
+            fc.id AS category_id,
+            fc.name AS category_name,
+            f.name,
+            f.asset_url
+        FROM furniture f
+        INNER JOIN furniture_categories fc ON fc.id = f.category_id
+        WHERE f.furniture_type = 'BASIC'
+          AND f.active = TRUE
+          AND f.unlock_score &lt;= #{rewardStage}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM user_furniture uf
+              WHERE uf.user_id = #{userId}
+                AND uf.furniture_id = f.id
+          )
+        ORDER BY f.unlock_score, f.id
+    </select>
+
+    <select id="existsSelectableFurniture" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM furniture f
+            WHERE f.id = #{furnitureId}
+              AND f.furniture_type = 'BASIC'
+              AND f.active = TRUE
+              AND f.unlock_score &lt;= #{rewardStage}
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM user_furniture uf
+                  WHERE uf.user_id = #{userId}
+                    AND uf.furniture_id = f.id
+              )
+        )
+    </select>
+
+    <insert id="insertUserFurniture">
+        INSERT IGNORE INTO user_furniture (user_id, furniture_id, is_placed)
+        VALUES (#{userId}, #{furnitureId}, TRUE)
+    </insert>
+
+    <update id="claimReward">
+        UPDATE furniture_reward
+        SET selected_furniture_id = #{furnitureId},
+            claimed_at = CURRENT_TIMESTAMP
+        WHERE id = #{rewardId}
+          AND user_id = #{userId}
+          AND selected_furniture_id IS NULL
+          AND claimed_at IS NULL
+    </update>
+
+    <select id="existsOwnedFurniture" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM user_furniture
+            WHERE user_id = #{userId}
+              AND furniture_id = #{furnitureId}
+        )
+    </select>
+
+    <update id="unplaceFurnitureInSameCategory">
+        UPDATE user_furniture uf
+        INNER JOIN furniture owned_f ON owned_f.id = uf.furniture_id
+        INNER JOIN furniture selected_f ON selected_f.id = #{furnitureId}
+        SET uf.is_placed = FALSE
+        WHERE uf.user_id = #{userId}
+          AND owned_f.category_id = selected_f.category_id
+          AND uf.is_placed = TRUE
+    </update>
+
+    <update id="updateFurniturePlacement">
+        UPDATE user_furniture
+        SET is_placed = #{placed}
+        WHERE user_id = #{userId}
+          AND furniture_id = #{furnitureId}
+    </update>
+
+    <insert id="insertAllMissingBasicFurniture">
+        INSERT IGNORE INTO user_furniture (user_id, furniture_id, is_placed)
+        SELECT
+            #{userId},
+            f.id,
+            NOT EXISTS (
+                SELECT 1
+                FROM user_furniture placed_uf
+                INNER JOIN furniture placed_f
+                    ON placed_f.id = placed_uf.furniture_id
+                WHERE placed_uf.user_id = #{userId}
+                  AND placed_uf.is_placed = TRUE
+                  AND placed_f.category_id = f.category_id
+            )
+        FROM furniture f
+        WHERE f.furniture_type = 'BASIC'
+          AND f.active = TRUE
+    </insert>
+
+</mapper>
