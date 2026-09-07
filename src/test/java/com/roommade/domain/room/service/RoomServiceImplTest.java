@@ -6,6 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.preparation.dto.response.IndependenceStatus;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.service.PreparationService;
@@ -13,11 +14,13 @@ import com.roommade.domain.room.code.RoomErrorCode;
 import com.roommade.domain.room.dto.response.FurnitureOptionResponse;
 import com.roommade.domain.room.dto.response.FurnitureRewardSourceResponse;
 import com.roommade.domain.room.dto.response.RoomFurnitureResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureResponse;
 import com.roommade.domain.room.mapper.RoomMapper;
 import com.roommade.global.exception.BusinessException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,6 +37,9 @@ class RoomServiceImplTest {
 
     @Mock
     private PreparationService preparationService;
+
+    @Mock
+    private CoinService coinService;
 
     @InjectMocks
     private RoomServiceImpl roomService;
@@ -134,6 +140,75 @@ class RoomServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(RoomErrorCode.FURNITURE_NOT_OWNED);
+    }
+
+    @Test
+    @DisplayName("요청한 카테고리의 상점 가구와 해금 여부를 반환한다")
+    void returnsShopFurnitureForRequestedCategory() {
+        ShopFurnitureResponse desk =
+                new ShopFurnitureResponse(
+                        30L, 3L, "책상", "웜 오크 책상", "/desk.png", 250, false, true);
+        when(roomMapper.findShopFurniture(USER_ID, 3L)).thenReturn(List.of(desk));
+
+        assertThat(roomService.getShopFurniture(USER_ID, 3L).getFurniture())
+                .containsExactly(desk);
+    }
+
+    @Test
+    @DisplayName("해금한 카테고리의 상점 가구를 코인으로 구매한다")
+    void purchasesShopFurnitureBySpendingCoins() {
+        RoomFurnitureResponse desk = furniture(30L, "웜 오크 책상", false);
+        when(roomMapper.findShopFurniturePrice(30L)).thenReturn(250);
+        when(roomMapper.existsUnlockedCategoryForShopFurniture(USER_ID, 30L)).thenReturn(true);
+        when(roomMapper.insertPurchasedFurniture(USER_ID, 30L)).thenReturn(1);
+        when(roomMapper.findOwnedFurnitureById(USER_ID, 30L)).thenReturn(desk);
+
+        assertThat(roomService.purchaseFurniture(USER_ID, 30L)).isSameAs(desk);
+
+        verify(coinService).spend(USER_ID, 250);
+    }
+
+    @Test
+    @DisplayName("상점 가구가 아니면 구매를 거절한다")
+    void rejectsPurchaseOfNonShopFurniture() {
+        when(roomMapper.findShopFurniturePrice(30L)).thenReturn(null);
+
+        assertThatThrownBy(() -> roomService.purchaseFurniture(USER_ID, 30L))
+                .isInstanceOf(BusinessException.class)
+                .extracting(exception -> ((BusinessException) exception).getErrorCode())
+                .isEqualTo(RoomErrorCode.FURNITURE_NOT_PURCHASABLE);
+
+        verify(roomMapper, never()).insertPurchasedFurniture(USER_ID, 30L);
+        verify(coinService, never()).spend(USER_ID, 250);
+    }
+
+    @Test
+    @DisplayName("해금하지 않은 카테고리의 가구 구매를 거절하고 코인을 차감하지 않는다")
+    void rejectsPurchaseOfLockedCategoryWithoutSpendingCoins() {
+        when(roomMapper.findShopFurniturePrice(30L)).thenReturn(250);
+
+        assertThatThrownBy(() -> roomService.purchaseFurniture(USER_ID, 30L))
+                .isInstanceOf(BusinessException.class)
+                .extracting(exception -> ((BusinessException) exception).getErrorCode())
+                .isEqualTo(RoomErrorCode.FURNITURE_CATEGORY_NOT_UNLOCKED);
+
+        verify(roomMapper, never()).insertPurchasedFurniture(USER_ID, 30L);
+        verify(coinService, never()).spend(USER_ID, 250);
+    }
+
+    @Test
+    @DisplayName("이미 보유한 상점 가구의 재구매를 거절하고 코인을 차감하지 않는다")
+    void rejectsPurchaseOfAlreadyOwnedFurnitureWithoutSpendingCoins() {
+        when(roomMapper.findShopFurniturePrice(30L)).thenReturn(250);
+        when(roomMapper.existsUnlockedCategoryForShopFurniture(USER_ID, 30L)).thenReturn(true);
+        when(roomMapper.insertPurchasedFurniture(USER_ID, 30L)).thenReturn(0);
+
+        assertThatThrownBy(() -> roomService.purchaseFurniture(USER_ID, 30L))
+                .isInstanceOf(BusinessException.class)
+                .extracting(exception -> ((BusinessException) exception).getErrorCode())
+                .isEqualTo(RoomErrorCode.FURNITURE_ALREADY_OWNED);
+
+        verify(coinService, never()).spend(USER_ID, 250);
     }
 
     private ReadinessDiagnosisResponse readiness(

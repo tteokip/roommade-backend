@@ -189,4 +189,61 @@
           AND f.active = TRUE
     </insert>
 
+    <select id="findShopFurniture"
+            resultType="com.roommade.domain.room.dto.response.ShopFurnitureResponse">
+        SELECT
+            f.id AS furniture_id,
+            fc.id AS category_id,
+            fc.name AS category_name,
+            f.name,
+            f.asset_url,
+            f.coin_price,
+            EXISTS (
+                SELECT 1
+                FROM user_furniture uf
+                WHERE uf.user_id = #{userId}
+                  AND uf.furniture_id = f.id
+            ) AS owned,
+            EXISTS (
+                SELECT 1
+                FROM user_furniture uf
+                INNER JOIN furniture basic_f ON basic_f.id = uf.furniture_id
+                WHERE uf.user_id = #{userId}
+                  AND basic_f.category_id = f.category_id
+                  AND basic_f.furniture_type = 'BASIC'
+            ) AS unlocked
+        FROM furniture f
+        INNER JOIN furniture_categories fc ON fc.id = f.category_id
+        WHERE f.furniture_type = 'SHOP'
+        <if test="categoryId != null">
+            AND fc.id = #{categoryId}
+        </if>
+        ORDER BY fc.id, f.id
+    </select>
+
+    <select id="findShopFurniturePrice" resultType="java.lang.Integer">
+        SELECT coin_price
+        FROM furniture
+        WHERE id = #{furnitureId}
+          AND furniture_type = 'SHOP'
+    </select>
+
+    <select id="existsUnlockedCategoryForShopFurniture" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM furniture shop_f
+            INNER JOIN user_furniture uf ON uf.user_id = #{userId}
+            INNER JOIN furniture basic_f ON basic_f.id = uf.furniture_id
+            WHERE shop_f.id = #{furnitureId}
+              AND shop_f.furniture_type = 'SHOP'
+              AND basic_f.category_id = shop_f.category_id
+              AND basic_f.furniture_type = 'BASIC'
+        )
+    </select>
+
+    <insert id="insertPurchasedFurniture">
+        INSERT IGNORE INTO user_furniture (user_id, furniture_id, is_placed)
+        VALUES (#{userId}, #{furnitureId}, FALSE)
+    </insert>
+
 </mapper>

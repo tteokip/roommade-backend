@@ -3,6 +3,7 @@ package com.roommade.domain.room.mapper;
 import com.roommade.domain.room.dto.response.FurnitureOptionResponse;
 import com.roommade.domain.room.dto.response.FurnitureRewardSourceResponse;
 import com.roommade.domain.room.dto.response.RoomFurnitureResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureResponse;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -61,4 +62,18 @@ public interface RoomMapper {
             @Param("placed") boolean placed);
 
     int insertAllMissingBasicFurniture(@Param("userId") Long userId);
+
+    List<ShopFurnitureResponse> findShopFurniture(
+            @Param("userId") Long userId,
+            @Param("categoryId") Long categoryId);
+
+    Integer findShopFurniturePrice(@Param("furnitureId") Long furnitureId);
+
+    boolean existsUnlockedCategoryForShopFurniture(
+            @Param("userId") Long userId,
+            @Param("furnitureId") Long furnitureId);
+
+    int insertPurchasedFurniture(
+            @Param("userId") Long userId,
+            @Param("furnitureId") Long furnitureId);
 }
