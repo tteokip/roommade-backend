@@ -80,6 +80,12 @@
         INSERT INTO house_comparisons (user_id) VALUES (#{userId})
     </insert>
 
+    <select id="findMonthlyRentByHouseId" resultType="Long">
+        SELECT monthly_rent
+        FROM houses
+        WHERE id = #{houseId}
+    </select>
+
     <insert id="insertHouse">
         INSERT INTO houses (
             comparison_id, house_type, location, deposit, monthly_rent, maintenance_fee,

@@ -53,6 +53,11 @@ public class HouseComparisonServiceImpl implements HouseComparisonService {
         return houseComparisonMapper.existsHouseByIdAndUserId(houseId, userId);
     }
 
+    @Override
+    public Long findMonthlyRentByHouseId(Long houseId) {
+        return houseComparisonMapper.findMonthlyRentByHouseId(houseId);
+    }
+
     private void validateHouseType(String houseType) {
         if (!HOUSE_TYPE_A.equals(houseType) && !HOUSE_TYPE_B.equals(houseType)) {
             throw new BusinessException(HouseErrorCode.INVALID_HOUSE_TYPE);
