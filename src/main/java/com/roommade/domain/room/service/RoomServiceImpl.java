@@ -1,5 +1,6 @@
 package com.roommade.domain.room.service;
 
+import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.preparation.dto.response.IndependenceStatus;
 import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
 import com.roommade.domain.preparation.service.PreparationService;
@@ -9,6 +10,7 @@ import com.roommade.domain.room.dto.response.FurnitureRewardSourceResponse;
 import com.roommade.domain.room.dto.response.FurnitureRewardsResponse;
 import com.roommade.domain.room.dto.response.RoomFurnitureResponse;
 import com.roommade.domain.room.dto.response.RoomResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureListResponse;
 import com.roommade.domain.room.mapper.RoomMapper;
 import com.roommade.global.exception.BusinessException;
 import java.math.BigDecimal;
@@ -28,6 +30,7 @@ public class RoomServiceImpl implements RoomService {
 
     private final RoomMapper roomMapper;
     private final PreparationService preparationService;
+    private final CoinService coinService;
 
     @Override
     @Transactional
@@ -89,6 +92,29 @@ public class RoomServiceImpl implements RoomService {
             roomMapper.unplaceFurnitureInSameCategory(userId, furnitureId);
         }
         roomMapper.updateFurniturePlacement(userId, furnitureId, placed);
+        return roomMapper.findOwnedFurnitureById(userId, furnitureId);
+    }
+
+    @Override
+    public ShopFurnitureListResponse getShopFurniture(Long userId, Long categoryId) {
+        return new ShopFurnitureListResponse(
+                roomMapper.findShopFurniture(userId, categoryId));
+    }
+
+    @Override
+    @Transactional
+    public RoomFurnitureResponse purchaseFurniture(Long userId, Long furnitureId) {
+        Integer price = roomMapper.findShopFurniturePrice(furnitureId);
+        if (price == null) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_NOT_PURCHASABLE);
+        }
+        if (!roomMapper.existsUnlockedCategoryForShopFurniture(userId, furnitureId)) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_CATEGORY_NOT_UNLOCKED);
+        }
+        if (roomMapper.insertPurchasedFurniture(userId, furnitureId) == 0) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_ALREADY_OWNED);
+        }
+        coinService.spend(userId, price);
         return roomMapper.findOwnedFurnitureById(userId, furnitureId);
     }
 

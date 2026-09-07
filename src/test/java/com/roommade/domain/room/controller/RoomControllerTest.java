@@ -13,12 +13,15 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.standal
 import com.roommade.domain.room.dto.response.FurnitureRewardsResponse;
 import com.roommade.domain.room.dto.response.RoomFurnitureResponse;
 import com.roommade.domain.room.dto.response.RoomResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureListResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureResponse;
 import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -95,6 +98,37 @@ class RoomControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("ROOM_004"))
                 .andExpect(jsonPath("$.data.placed").value(false));
+    }
+
+    @Test
+    @DisplayName("상점 가구 목록과 카테고리 해금 여부를 조회한다")
+    void returnsShopFurnitureList() throws Exception {
+        ShopFurnitureResponse desk =
+                new ShopFurnitureResponse(
+                        30L, 3L, "책상", "웜 오크 책상", "/desk.png", 250, false, true);
+        when(roomService.getShopFurniture(USER_ID, 3L)).thenReturn(
+                new ShopFurnitureListResponse(List.of(desk)));
+
+        mockMvc.perform(get("/api/rooms/shop/furniture")
+                        .param("categoryId", "3")
+                        .header("X-User-Id", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("ROOM_012"))
+                .andExpect(jsonPath("$.data.furniture[0].coinPrice").value(250))
+                .andExpect(jsonPath("$.data.furniture[0].owned").value(false))
+                .andExpect(jsonPath("$.data.furniture[0].unlocked").value(true));
+    }
+
+    @Test
+    @DisplayName("해금한 카테고리의 상점 가구를 구매한다")
+    void purchasesFurniture() throws Exception {
+        when(roomService.purchaseFurniture(USER_ID, 30L)).thenReturn(furniture(false));
+
+        mockMvc.perform(post("/api/rooms/furniture/30/purchase")
+                        .header("X-User-Id", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("ROOM_009"))
+                .andExpect(jsonPath("$.data.furnitureId").value(10));
     }
 
     @Test

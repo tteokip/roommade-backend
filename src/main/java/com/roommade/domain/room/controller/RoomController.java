@@ -7,6 +7,7 @@ import com.roommade.domain.room.dto.request.FurnitureRewardClaimRequest;
 import com.roommade.domain.room.dto.response.FurnitureRewardsResponse;
 import com.roommade.domain.room.dto.response.RoomFurnitureResponse;
 import com.roommade.domain.room.dto.response.RoomResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureListResponse;
 import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import com.roommade.global.response.ApiResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -64,6 +66,26 @@ public class RoomController {
         return ApiResponse.success(
                 RoomSuccessCode.FURNITURE_PLACEMENT_UPDATED,
                 roomService.updatePlacement(userId, furnitureId, request.getPlaced()));
+    }
+
+    @GetMapping("/shop/furniture")
+    public ApiResponse<ShopFurnitureListResponse> getShopFurniture(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestParam(required = false) Long categoryId) {
+        validateUserId(userId);
+        return ApiResponse.success(
+                RoomSuccessCode.SHOP_FURNITURE_FOUND,
+                roomService.getShopFurniture(userId, categoryId));
+    }
+
+    @PostMapping("/furniture/{furnitureId}/purchase")
+    public ApiResponse<RoomFurnitureResponse> purchaseFurniture(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable Long furnitureId) {
+        validateUserId(userId);
+        return ApiResponse.success(
+                RoomSuccessCode.FURNITURE_PURCHASED,
+                roomService.purchaseFurniture(userId, furnitureId));
     }
 
     private void validateUserId(Long userId) {
