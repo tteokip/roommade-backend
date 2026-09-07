@@ -2,6 +2,7 @@ package com.roommade.domain.preparation.service;
 
 import com.roommade.domain.house.code.HouseErrorCode;
 import com.roommade.domain.house.service.HouseComparisonService;
+import com.roommade.domain.living.service.LivingRentService;
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest.ConfirmationType;
@@ -24,6 +25,7 @@ public class MoveInServiceImpl implements MoveInService {
     private final HouseComparisonService houseComparisonService;
     private final PreparationService preparationService;
     private final RoomService roomService;
+    private final LivingRentService livingRentService;
     private final Clock clock;
 
     @Override
@@ -32,6 +34,7 @@ public class MoveInServiceImpl implements MoveInService {
             Long userId, MoveInConfirmRequest request) {
         validateMoveInDate(request);
         Long confirmedHouseId = resolveConfirmedHouseId(userId, request);
+        applyRegisteredHouseRent(userId, confirmedHouseId);
         MoveInStateSourceResponse state = preparationService.scheduleMoveIn(
                 userId, confirmedHouseId, request.getMoveInDate());
         roomService.grantAllBasicFurniture(userId);
@@ -50,6 +53,16 @@ public class MoveInServiceImpl implements MoveInService {
         }
         if (request.getMoveInDate().isBefore(LocalDate.now(clock))) {
             throw new BusinessException(PreparationErrorCode.MOVE_IN_DATE_IN_PAST);
+        }
+    }
+
+    private void applyRegisteredHouseRent(Long userId, Long confirmedHouseId) {
+        if (confirmedHouseId == null) {
+            return;
+        }
+        Long monthlyRent = houseComparisonService.findMonthlyRentByHouseId(confirmedHouseId);
+        if (monthlyRent != null) {
+            livingRentService.setMonthlyRent(userId, monthlyRent);
         }
     }
 

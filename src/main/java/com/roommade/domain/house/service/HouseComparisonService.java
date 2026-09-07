@@ -11,4 +11,7 @@ public interface HouseComparisonService {
 
     /** 매물이 사용자의 비교 대상 매물인지 확인. */
     boolean isComparisonHouseOwnedByUser(Long userId, Long houseId);
+
+    /** 매물에 등록된 월세를 조회한다. */
+    Long findMonthlyRentByHouseId(Long houseId);
 }

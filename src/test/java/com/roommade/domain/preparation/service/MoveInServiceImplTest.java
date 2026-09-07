@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.roommade.domain.house.code.HouseErrorCode;
 import com.roommade.domain.house.service.HouseComparisonService;
+import com.roommade.domain.living.service.LivingRentService;
 import com.roommade.domain.preparation.code.PreparationErrorCode;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest;
 import com.roommade.domain.preparation.dto.request.MoveInConfirmRequest.ConfirmationType;
@@ -48,6 +49,9 @@ class MoveInServiceImplTest {
     private RoomService roomService;
 
     @Mock
+    private LivingRentService livingRentService;
+
+    @Mock
     private Clock clock;
 
     @InjectMocks
@@ -66,6 +70,7 @@ class MoveInServiceImplTest {
                 new MoveInConfirmRequest(ConfirmationType.COMPARISON, HOUSE_ID, moveInDate);
         when(houseComparisonService.isComparisonHouseOwnedByUser(USER_ID, HOUSE_ID))
                 .thenReturn(true);
+        when(houseComparisonService.findMonthlyRentByHouseId(HOUSE_ID)).thenReturn(700_000L);
         when(preparationService.scheduleMoveIn(USER_ID, HOUSE_ID, moveInDate))
                 .thenReturn(new MoveInStateSourceResponse(moveInDate, null));
 
@@ -78,6 +83,23 @@ class MoveInServiceImplTest {
         assertThat(result.getIndependenceStatus())
                 .isEqualTo(IndependenceStatus.MOVE_IN_SCHEDULED);
         verify(roomService).grantAllBasicFurniture(USER_ID);
+        verify(livingRentService).setMonthlyRent(USER_ID, 700_000L);
+    }
+
+    @Test
+    void skipsRentCopyWhenRegisteredHouseHasNoRent() {
+        LocalDate moveInDate = TODAY.plusDays(7);
+        MoveInConfirmRequest request =
+                new MoveInConfirmRequest(ConfirmationType.COMPARISON, HOUSE_ID, moveInDate);
+        when(houseComparisonService.isComparisonHouseOwnedByUser(USER_ID, HOUSE_ID))
+                .thenReturn(true);
+        when(houseComparisonService.findMonthlyRentByHouseId(HOUSE_ID)).thenReturn(null);
+        when(preparationService.scheduleMoveIn(USER_ID, HOUSE_ID, moveInDate))
+                .thenReturn(new MoveInStateSourceResponse(moveInDate, null));
+
+        moveInService.confirmMoveIn(USER_ID, request);
+
+        verifyNoInteractions(livingRentService);
     }
 
     @Test
@@ -93,6 +115,7 @@ class MoveInServiceImplTest {
         assertThat(result.getConfirmedHouseId()).isNull();
         assertThat(result.isManualRentInputRequired()).isTrue();
         verifyNoInteractions(houseComparisonService);
+        verifyNoInteractions(livingRentService);
         verify(roomService).grantAllBasicFurniture(USER_ID);
     }
 
@@ -122,7 +145,8 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.MOVE_IN_DATE_IN_PAST);
 
-        verifyNoInteractions(houseComparisonService, preparationService, roomService);
+        verifyNoInteractions(
+                houseComparisonService, preparationService, roomService, livingRentService);
     }
 
     @Test
@@ -136,7 +160,8 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
 
-        verifyNoInteractions(houseComparisonService, preparationService, roomService);
+        verifyNoInteractions(
+                houseComparisonService, preparationService, roomService, livingRentService);
     }
 
     @Test
@@ -150,7 +175,8 @@ class MoveInServiceImplTest {
                 .extracting(exception -> ((BusinessException) exception).getErrorCode())
                 .isEqualTo(PreparationErrorCode.INVALID_MOVE_IN_CONFIRMATION);
 
-        verifyNoInteractions(houseComparisonService, preparationService, roomService);
+        verifyNoInteractions(
+                houseComparisonService, preparationService, roomService, livingRentService);
     }
 
     @Test

@@ -20,4 +20,6 @@ public interface HouseComparisonMapper {
             @Param("comparisonId") Long comparisonId,
             @Param("houseType") String houseType,
             @Param("request") HouseRegisterRequest request);
+
+    Long findMonthlyRentByHouseId(@Param("houseId") Long houseId);
 }
