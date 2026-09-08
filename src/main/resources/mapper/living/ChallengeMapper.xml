@@ -13,4 +13,36 @@
         ORDER BY max_spending ASC
     </select>
 
+    <!--
+        지출액보다 큰(=이상인) max_spending 중 가장 작은 것을 만족 레벨로 본다(가장 빡빡한 기준).
+        만족하는 레벨이 없으면(지출액이 모든 기준을 초과) achieved_level_id는 NULL.
+        daily_challenges.daily_living_cost_id가 UNIQUE라 이미 마감된 날은 다시 안 잡힌다.
+    -->
+    <insert id="closeDueChallenges">
+        INSERT INTO daily_challenges (daily_living_cost_id, achieved_level_id, closed_at)
+        SELECT
+            dlc.id,
+            (SELECT cl.id
+             FROM challenge_levels cl
+             WHERE cl.max_spending >= dlc.total_amount
+             ORDER BY cl.max_spending ASC
+             LIMIT 1) AS achieved_level_id,
+            #{closedAt}
+        FROM daily_living_costs dlc
+        WHERE dlc.spending_date &lt; #{today}
+          AND NOT EXISTS (
+              SELECT 1 FROM daily_challenges dc WHERE dc.daily_living_cost_id = dlc.id
+          )
+    </insert>
+
+    <select id="findRewardsClosedAt" resultType="com.roommade.domain.living.dto.response.ChallengeRewardResponse">
+        SELECT
+            dlc.user_id AS userId,
+            cl.reward_coin AS rewardCoin
+        FROM daily_challenges dc
+        JOIN daily_living_costs dlc ON dlc.id = dc.daily_living_cost_id
+        JOIN challenge_levels cl ON cl.id = dc.achieved_level_id
+        WHERE dc.closed_at = #{closedAt}
+    </select>
+
 </mapper>
