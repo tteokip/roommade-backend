@@ -220,7 +220,7 @@ public class HouseBalanceGameServiceImpl implements HouseBalanceGameService {
     }
 
     private Integer optionRank(String optionType) {
-        return OPTION_RANKS.get(optionType);
+        return optionType == null ? null : OPTION_RANKS.get(optionType);
     }
 
     private <T extends Comparable<T>> FactorComparison compareLowerIsBetter(T a, T b) {
