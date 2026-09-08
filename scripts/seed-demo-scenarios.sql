@@ -96,20 +96,20 @@ WHERE u.email IN (@preparing_email, @transition_email, @living_email, @legacy_pr
 DELETE FROM users
 WHERE email IN (@preparing_email, @transition_email, @living_email, @legacy_preparing_email, @legacy_transition_email, @legacy_living_email);
 
--- 정식 인증 전 임시 X-User-Id 방식용 계정이다. password_hash는 현재 API에서 사용하지 않는다.
+-- 시연 계정 공통 비밀번호는 demo1234이다.
 INSERT INTO users (email, password_hash) VALUES
-(@preparing_email, 'demo-only-no-auth'),
-(@transition_email, 'demo-only-no-auth'),
-(@living_email, 'demo-only-no-auth');
+(@preparing_email, '$2a$10$JX1u9v/j8.yoLngLGPhh1ukcarDGzb3.3qI2Gblt6QYGLKKDFMzvC'),
+(@transition_email, '$2a$10$JX1u9v/j8.yoLngLGPhh1ukcarDGzb3.3qI2Gblt6QYGLKKDFMzvC'),
+(@living_email, '$2a$10$JX1u9v/j8.yoLngLGPhh1ukcarDGzb3.3qI2Gblt6QYGLKKDFMzvC');
 
--- 공통 프로필. preparing은 RIR 30%(45점)와 보증금 약 22.22%(10점)로 준비도 55점을 만든다.
+-- 1번 계정은 RIR 35점 + 보증금 20점, 2번 계정은 RIR 45점 + 보증금 45점으로 구성한다.
 INSERT INTO user_profiles (
     user_id, name, birth_date, monthly_income,
     workplace_road_address, workplace_detail_address,
     deposit_limit, monthly_rent_limit
 )
 SELECT id, '김룸메', '1999-05-18', 3000000,
-       '서울특별시 영등포구 여의대로 24', '10층', 30000000, 900000
+       '서울특별시 영등포구 여의대로 24', '10층', 30000000, 1033333
 FROM users
 WHERE email = @preparing_email
 UNION ALL
@@ -123,38 +123,18 @@ SELECT id, '김룸메', '1999-05-18', 3000000,
 FROM users
 WHERE email = @living_email;
 
--- 1) 독립 전: 보증금 약 22.22%(10점), 집 비교 점수 0, RIR 점수 45 = 준비도 55.
---    집 비교를 완료하면 10점이 더해져 65점이 되고, 60점 가구 선택권이 새로 열린다.
+-- 1) 독립 전: RIR 35점 + 보증금 약 44.44%(20점), 집 비교 점수 0 = 준비도 55.
+--    15·30·45점 가구 선택권 3개를 미사용 상태로 시연한다.
 INSERT INTO independence_progress (user_id, current_deposit)
-SELECT id, 6666667 FROM users WHERE email = @preparing_email;
+SELECT id, 13333333 FROM users WHERE email = @preparing_email;
 
--- 2) 입주 예정: 확정 매물과 D-3 입주일을 보여준다.
-INSERT INTO house_comparisons (user_id, status, completed_at)
-SELECT id, 'COMPLETED', NOW() - INTERVAL 1 DAY
-FROM users WHERE email = @transition_email;
-SET @transition_comparison_id = LAST_INSERT_ID();
-
-INSERT INTO houses (
-    comparison_id, house_type, location, deposit, monthly_rent, maintenance_fee,
-    area, station_walk_minutes, commute_min_minutes, commute_max_minutes,
-    floor_type, room_structure, option_type
-) VALUES
-(@transition_comparison_id, 'A', '서울 영등포구 당산동', 10000000, 900000, 70000,
- 29.70, 6, 32, 41, '중층', '오픈형 원룸', '에어컨 포함'),
-(@transition_comparison_id, 'B', '서울 영등포구 문래동', 5000000, 980000, 80000,
- 26.40, 9, 38, 49, '고층', '분리형 원룸', '냉장고 포함');
-SET @transition_house_a_id = (
-    SELECT id FROM houses WHERE comparison_id = @transition_comparison_id AND house_type = 'A'
-);
-
+-- 2) 독립 전: RIR 45점 + 보증금 45점 = 준비도 90.
+--    집 비교를 완료해 100점을 만들고, 이어서 입주 확정까지 진행한다.
 INSERT INTO independence_progress (
-    user_id, current_deposit, house_compare_completed_at, confirmed_house_id, move_in_date, moved_in_at
+    user_id, current_deposit
 )
-SELECT id, 24000000, NOW() - INTERVAL 1 DAY, @transition_house_a_id, @today + INTERVAL 3 DAY, NULL
+SELECT id, 30000000
 FROM users WHERE email = @transition_email;
-
-INSERT INTO living_rents (user_id, monthly_rent)
-SELECT id, 900000 FROM users WHERE email = @transition_email;
 
 -- 3) 독립 후: 입주 완료 및 생활비/비상금/퀴즈 시연용 상태.
 INSERT INTO house_comparisons (user_id, status, completed_at)
@@ -185,7 +165,11 @@ FROM users WHERE email = @living_email;
 INSERT INTO living_rents (user_id, monthly_rent)
 SELECT id, 900000 FROM users WHERE email = @living_email;
 
--- 비상금 목표는 아직 설정하지 않아 화면에서 목표를 직접 입력할 수 있다.
+-- 비상금은 목표 50만 원 중 38만 원을 모은 진행 상태로 둔다.
+INSERT INTO emergency_funds (user_id, target_amount, current_amount, achieved_at)
+SELECT id, 500000, 380000, NULL
+FROM users WHERE email = @living_email;
+
 -- 생활비는 V8처럼 상대 날짜로 생성한다.
 INSERT INTO daily_living_costs (user_id, spending_date, total_amount)
 WITH RECURSIVE date_range AS (
@@ -195,7 +179,7 @@ WITH RECURSIVE date_range AS (
     FROM date_range
     WHERE spending_date < @today
 )
-SELECT u.id, dr.spending_date, 11000 + DAYOFWEEK(dr.spending_date) * 1100
+SELECT u.id, dr.spending_date, 7000 + DAYOFWEEK(dr.spending_date) * 800
 FROM users u
 CROSS JOIN date_range dr
 WHERE u.email = @living_email;
@@ -208,10 +192,37 @@ WITH RECURSIVE date_range AS (
     FROM date_range
     WHERE spending_date < LAST_DAY(@today - INTERVAL 1 MONTH)
 )
-SELECT u.id, dr.spending_date, 10000 + DAYOFWEEK(dr.spending_date) * 1900
+-- 지난달 그래프는 요일 패턴에 날짜별 변동을 더해 자연스럽게 들쭉날쭉하게 보이도록 한다.
+SELECT u.id, dr.spending_date,
+       6500 + DAYOFWEEK(dr.spending_date) * 500 + MOD(DAY(dr.spending_date) * 1100, 2300)
 FROM users u
 CROSS JOIN date_range dr
 WHERE u.email = @living_email;
+
+-- 전날은 1단계(2만 원 이하) 성공으로 마감해, 다음 날 보상 안내 팝업을 시연한다.
+UPDATE daily_living_costs dlc
+INNER JOIN users u ON u.id = dlc.user_id
+SET dlc.total_amount = 18000
+WHERE u.email = @living_email
+  AND dlc.spending_date = @today - INTERVAL 1 DAY;
+
+-- 과거 지출은 모두 마감된 챌린지로 기록한다. 이 중 전날 기록은 오늘 00:05에 20코인이
+-- 지급된 상태이므로, 서비스 첫 진입 시 프론트가 보상 안내 팝업을 표시할 수 있다.
+INSERT INTO daily_challenges (daily_living_cost_id, achieved_level_id, closed_at)
+SELECT
+    dlc.id,
+    (
+        SELECT cl.id
+        FROM challenge_levels cl
+        WHERE cl.max_spending >= dlc.total_amount
+        ORDER BY cl.max_spending ASC
+        LIMIT 1
+    ),
+    TIMESTAMP(dlc.spending_date + INTERVAL 1 DAY) + INTERVAL 5 MINUTE
+FROM daily_living_costs dlc
+INNER JOIN users u ON u.id = dlc.user_id
+WHERE u.email = @living_email
+  AND dlc.spending_date < @today;
 
 INSERT INTO monthly_living_costs (user_id, `year_month`, total_amount)
 SELECT id, DATE_FORMAT(@today - INTERVAL 1 MONTH, '%Y-%m'), 1250000
@@ -220,52 +231,27 @@ UNION ALL
 SELECT id, DATE_FORMAT(@today - INTERVAL 2 MONTH, '%Y-%m'), 1380000
 FROM users WHERE email = @living_email;
 
--- 독립 후 생활 계정은 상점 미구매 가구를 추가 구매할 수 있도록 500코인을 보유한다.
+-- 독립 후 생활 계정은 상점 가구 구매용 500코인과 전날 일일 챌린지 1단계 보상 20코인을 보유한다.
 -- 오늘의 퀴즈 정답 시 서비스가 50코인을 추가 지급한다.
 INSERT INTO coin_wallets (user_id, balance)
 SELECT id, 0 FROM users WHERE email = @preparing_email
 UNION ALL
 SELECT id, 0 FROM users WHERE email = @transition_email
 UNION ALL
-SELECT id, 500 FROM users WHERE email = @living_email;
+SELECT id, 520 FROM users WHERE email = @living_email;
 
--- preparing 계정: 시작점(55점)에서 15/30/45 보상은 사용 완료 상태다.
--- 집 비교 완료 뒤 60점 보상만 새로 생성되어 수령할 수 있다.
-INSERT INTO user_furniture (user_id, furniture_id, is_placed)
-SELECT u.id, f.id, TRUE
+-- 1번 계정은 15·30·45점 가구 선택권 3개를 미사용 상태로 둔다.
+INSERT INTO furniture_reward (user_id, reward_stage)
+SELECT u.id, stages.reward_stage
 FROM users u
-INNER JOIN furniture f ON f.name = '기본 창문'
-WHERE u.email = @preparing_email
-UNION ALL
-SELECT u.id, f.id, TRUE
-FROM users u
-INNER JOIN furniture f ON f.name = '기본 침대'
-WHERE u.email = @preparing_email
-UNION ALL
-SELECT u.id, f.id, TRUE
-FROM users u
-INNER JOIN furniture f ON f.name = '기본 의자'
-WHERE u.email = @preparing_email
-UNION ALL
-SELECT u.id, f.id, TRUE
-FROM users u
-INNER JOIN furniture f ON f.name = '기본 무드등'
+CROSS JOIN (
+    SELECT 15 AS reward_stage
+    UNION ALL SELECT 30
+    UNION ALL SELECT 45
+) stages
 WHERE u.email = @preparing_email;
 
-INSERT INTO furniture_reward (user_id, reward_stage, selected_furniture_id, claimed_at)
-SELECT u.id, 15, f.id, NOW() - INTERVAL 2 DAY
-FROM users u INNER JOIN furniture f ON f.name = '기본 침대'
-WHERE u.email = @preparing_email
-UNION ALL
-SELECT u.id, 30, f.id, NOW() - INTERVAL 1 DAY
-FROM users u INNER JOIN furniture f ON f.name = '기본 의자'
-WHERE u.email = @preparing_email
-UNION ALL
-SELECT u.id, 45, f.id, NOW() - INTERVAL 12 HOUR
-FROM users u INNER JOIN furniture f ON f.name = '기본 무드등'
-WHERE u.email = @preparing_email;
-
--- 입주 예정/완료 사용자는 기본 가구 전체 보유 상태다.
+-- 2·3번 계정은 기본 가구 전체를 해금하고, 가구 선택권을 모두 사용한 상태다.
 INSERT INTO user_furniture (user_id, furniture_id, is_placed)
 SELECT u.id, f.id,
        NOT EXISTS (
@@ -279,6 +265,27 @@ CROSS JOIN furniture f
 WHERE u.email IN (@transition_email, @living_email)
   AND f.furniture_type = 'BASIC'
   AND f.active = TRUE;
+
+INSERT INTO furniture_reward (user_id, reward_stage, selected_furniture_id, claimed_at)
+SELECT u.id, 15, f.id, NOW() - INTERVAL 5 DAY
+FROM users u INNER JOIN furniture f ON f.name = '기본 침대'
+WHERE u.email = @transition_email
+UNION ALL
+SELECT u.id, 30, f.id, NOW() - INTERVAL 4 DAY
+FROM users u INNER JOIN furniture f ON f.name = '기본 의자'
+WHERE u.email = @transition_email
+UNION ALL
+SELECT u.id, 45, f.id, NOW() - INTERVAL 3 DAY
+FROM users u INNER JOIN furniture f ON f.name = '기본 무드등'
+WHERE u.email = @transition_email
+UNION ALL
+SELECT u.id, 60, f.id, NOW() - INTERVAL 2 DAY
+FROM users u INNER JOIN furniture f ON f.name = '기본 화분'
+WHERE u.email = @transition_email
+UNION ALL
+SELECT u.id, 75, f.id, NOW() - INTERVAL 1 DAY
+FROM users u INNER JOIN furniture f ON f.name = '기본 화분'
+WHERE u.email = @transition_email;
 
 -- 독립 후 생활 계정은 과거에 구매한 웜 오크 가구 세트를 보유·배치해
 -- 방 꾸미기 완성 상태를 시연한다. 코지 코티지 세트는 미구매 상태로 남겨

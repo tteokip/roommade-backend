@@ -48,7 +48,7 @@ ORDER BY FIELD(
     'demo03@roommade.com'
 );
 
--- preparing: RIR 30% = 45점, 보증금 약 22.22% = 10점, 집 비교 점수는 0점이어야 한다.
+-- 1번 계정: RIR 35점 + 보증금 20점, 미사용 가구 선택권 3개를 확인한다.
 SELECT
     u.email,
     up.monthly_rent_limit * 100.0 / up.monthly_income AS rir_percent,
@@ -59,25 +59,60 @@ SELECT
              / (up.monthly_income * 20)
     END AS rir_score,
     ip.current_deposit,
-    ip.house_compare_completed_at
+    ip.house_compare_completed_at,
+    (
+        SELECT COUNT(*)
+        FROM furniture_reward fr
+        WHERE fr.user_id = u.id
+          AND fr.claimed_at IS NULL
+    ) AS pending_furniture_rewards
 FROM users u
 INNER JOIN user_profiles up ON up.user_id = u.id
 INNER JOIN independence_progress ip ON ip.user_id = u.id
 WHERE u.email = 'demo01@roommade.com';
 
--- transition/living: 확정 매물의 월세가 실제 생활 월세로 연결됐는지 확인한다.
+-- 2번 계정: 집 비교 전 90점, 모든 가구 선택권 사용 완료 상태를 확인한다.
+SELECT
+    u.email,
+    up.monthly_rent_limit * 100.0 / up.monthly_income AS rir_percent,
+    ip.current_deposit,
+    ip.house_compare_completed_at,
+    (
+        SELECT COUNT(*)
+        FROM furniture_reward fr
+        WHERE fr.user_id = u.id
+          AND fr.claimed_at IS NULL
+    ) AS pending_furniture_rewards
+FROM users u
+INNER JOIN user_profiles up ON up.user_id = u.id
+INNER JOIN independence_progress ip ON ip.user_id = u.id
+WHERE u.email = 'demo02@roommade.com';
+
+-- 3번 계정: 확정 매물의 월세, 비상금, 전날 챌린지 1단계·20코인 지급 기록을 확인한다.
 SELECT
     u.email,
     h.location AS confirmed_house,
     h.monthly_rent AS house_monthly_rent,
     lr.monthly_rent AS living_monthly_rent,
+    ef.current_amount AS emergency_current_amount,
+    ef.target_amount AS emergency_target_amount,
     ip.move_in_date,
-    ip.moved_in_at
+    ip.moved_in_at,
+    yesterday_cost.total_amount AS yesterday_spending,
+    yesterday_level.level AS yesterday_challenge_level,
+    yesterday_level.reward_coin AS yesterday_reward_coin,
+    yesterday_challenge.closed_at AS yesterday_challenge_closed_at
 FROM users u
 INNER JOIN independence_progress ip ON ip.user_id = u.id
 INNER JOIN houses h ON h.id = ip.confirmed_house_id
 INNER JOIN living_rents lr ON lr.user_id = u.id
-WHERE u.email IN ('demo02@roommade.com', 'demo03@roommade.com');
+INNER JOIN emergency_funds ef ON ef.user_id = u.id
+INNER JOIN daily_living_costs yesterday_cost
+    ON yesterday_cost.user_id = u.id
+    AND yesterday_cost.spending_date = CURDATE() - INTERVAL 1 DAY
+INNER JOIN daily_challenges yesterday_challenge ON yesterday_challenge.daily_living_cost_id = yesterday_cost.id
+INNER JOIN challenge_levels yesterday_level ON yesterday_level.id = yesterday_challenge.achieved_level_id
+WHERE u.email = 'demo03@roommade.com';
 
 -- 오늘의 퀴즈가 신용관리 문항으로 고정됐는지 확인한다.
 SELECT dq.quiz_date, qq.question
