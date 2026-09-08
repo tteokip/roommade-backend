@@ -2,6 +2,7 @@ package com.roommade.domain.living.mapper;
 
 import com.roommade.domain.living.dto.response.ChallengeLevelResponse;
 import com.roommade.domain.living.dto.response.ChallengeRewardResponse;
+import com.roommade.domain.living.dto.response.LatestChallengeResultResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,4 +19,7 @@ public interface ChallengeMapper {
 
     /** 방금 마감된 것 중 달성 레벨이 있는(코인 지급 대상인) 것만 조회한다. */
     List<ChallengeRewardResponse> findRewardsClosedAt(@Param("closedAt") LocalDateTime closedAt);
+
+    /** 사용자의 가장 최근 마감된 챌린지 결과를 조회한다. 마감 기록이 없으면 null. */
+    LatestChallengeResultResponse findLatestResult(@Param("userId") Long userId);
 }

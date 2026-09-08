@@ -45,4 +45,17 @@
         WHERE dc.closed_at = #{closedAt}
     </select>
 
+    <select id="findLatestResult" resultType="com.roommade.domain.living.dto.response.LatestChallengeResultResponse">
+        SELECT
+            dlc.spending_date AS challengeDate,
+            cl.level AS achievedLevel,
+            cl.reward_coin AS rewardCoin
+        FROM daily_challenges dc
+        JOIN daily_living_costs dlc ON dlc.id = dc.daily_living_cost_id
+        LEFT JOIN challenge_levels cl ON cl.id = dc.achieved_level_id
+        WHERE dlc.user_id = #{userId}
+        ORDER BY dlc.spending_date DESC
+        LIMIT 1
+    </select>
+
 </mapper>
