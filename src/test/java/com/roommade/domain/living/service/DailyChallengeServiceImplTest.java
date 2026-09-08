@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +13,7 @@ import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.living.dto.response.ChallengeLevelResponse;
 import com.roommade.domain.living.dto.response.ChallengeRewardResponse;
 import com.roommade.domain.living.dto.response.DailyChallengeResponse;
+import com.roommade.domain.living.dto.response.LatestChallengeResultResponse;
 import com.roommade.domain.living.mapper.ChallengeMapper;
 import com.roommade.domain.living.mapper.LivingCostMapper;
 import java.time.Clock;
@@ -51,8 +53,8 @@ class DailyChallengeServiceImplTest {
 
     @BeforeEach
     void setUpClock() {
-        when(clock.instant()).thenReturn(FIXED_INSTANT);
-        when(clock.getZone()).thenReturn(KOREA_ZONE_ID);
+        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
+        lenient().when(clock.getZone()).thenReturn(KOREA_ZONE_ID);
     }
 
     @Test
@@ -107,5 +109,23 @@ class DailyChallengeServiceImplTest {
 
         assertThat(closedCount).isEqualTo(2);
         verify(coinService, never()).earn(any(), anyInt());
+    }
+
+    @Test
+    void returnsLatestResultFromMapper() {
+        LatestChallengeResultResponse expected =
+                new LatestChallengeResultResponse(TODAY.minusDays(1), 2, 35);
+        when(challengeMapper.findLatestResult(USER_ID)).thenReturn(expected);
+
+        LatestChallengeResultResponse result = dailyChallengeService.getLatestResult(USER_ID);
+
+        assertThat(result).isSameAs(expected);
+    }
+
+    @Test
+    void returnsNullLatestResultWhenNoRecordExists() {
+        when(challengeMapper.findLatestResult(USER_ID)).thenReturn(null);
+
+        assertThat(dailyChallengeService.getLatestResult(USER_ID)).isNull();
     }
 }

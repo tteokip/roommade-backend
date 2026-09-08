@@ -4,6 +4,7 @@ import com.roommade.domain.coin.service.CoinService;
 import com.roommade.domain.living.dto.response.ChallengeLevelResponse;
 import com.roommade.domain.living.dto.response.ChallengeRewardResponse;
 import com.roommade.domain.living.dto.response.DailyChallengeResponse;
+import com.roommade.domain.living.dto.response.LatestChallengeResultResponse;
 import com.roommade.domain.living.mapper.ChallengeMapper;
 import com.roommade.domain.living.mapper.LivingCostMapper;
 import java.time.Clock;
@@ -54,5 +55,10 @@ public class DailyChallengeServiceImpl implements DailyChallengeService {
         }
 
         return closedCount;
+    }
+
+    @Override
+    public LatestChallengeResultResponse getLatestResult(Long userId) {
+        return challengeMapper.findLatestResult(userId);
     }
 }

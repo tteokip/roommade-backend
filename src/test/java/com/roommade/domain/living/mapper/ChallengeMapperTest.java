@@ -3,6 +3,7 @@ package com.roommade.domain.living.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.roommade.domain.living.dto.response.ChallengeRewardResponse;
+import com.roommade.domain.living.dto.response.LatestChallengeResultResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -102,6 +103,49 @@ class ChallengeMapperTest {
         int closedCount = challengeMapper.closeDueChallenges(LocalDate.now(), LocalDateTime.now());
 
         assertThat(closedCount).isZero();
+    }
+
+    @Test
+    @DisplayName("가장 최근 마감된 챌린지 결과를 반환한다")
+    void returnsMostRecentClosedResult() {
+        insertUser(940_105L);
+        insertClosedDailyChallenge(940_105L, LocalDate.now().minusDays(2), 2);
+        insertClosedDailyChallenge(940_105L, LocalDate.now().minusDays(1), 3);
+
+        LatestChallengeResultResponse result = challengeMapper.findLatestResult(940_105L);
+
+        assertThat(result.getChallengeDate()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(result.getAchievedLevel()).isEqualTo(3);
+        assertThat(result.getRewardCoin()).isEqualTo(50);
+    }
+
+    @Test
+    @DisplayName("달성 레벨이 없는 날은 achievedLevel/rewardCoin이 null로 반환된다")
+    void returnsNullLevelWhenNotAchieved() {
+        insertUser(940_106L);
+        insertClosedDailyChallenge(940_106L, LocalDate.now().minusDays(1), null);
+
+        LatestChallengeResultResponse result = challengeMapper.findLatestResult(940_106L);
+
+        assertThat(result.getAchievedLevel()).isNull();
+        assertThat(result.getRewardCoin()).isNull();
+    }
+
+    @Test
+    @DisplayName("마감 기록이 없으면 null을 반환한다")
+    void returnsNullWhenNoClosedRecordExists() {
+        insertUser(940_107L);
+
+        assertThat(challengeMapper.findLatestResult(940_107L)).isNull();
+    }
+
+    private void insertClosedDailyChallenge(long userId, LocalDate spendingDate, Integer level) {
+        Long dailyLivingCostId = insertDailyLivingCost(userId, spendingDate, 5_000L);
+        Long achievedLevelId = level == null ? null : levelId(level);
+        jdbcTemplate.update(
+                "INSERT INTO daily_challenges (daily_living_cost_id, achieved_level_id, closed_at) "
+                        + "VALUES (?, ?, ?)",
+                dailyLivingCostId, achievedLevelId, LocalDateTime.now());
     }
 
     private Long levelId(int level) {
