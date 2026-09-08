@@ -18,7 +18,7 @@
 
     <select id="findLoginUserByEmail"
             resultType="com.roommade.domain.user.dto.response.UserLoginSourceResponse">
-        SELECT id, email, password_hash
+        SELECT id AS user_id, email, password_hash
         FROM users
         WHERE email = #{email}
     </select>
