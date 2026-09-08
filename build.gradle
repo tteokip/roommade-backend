@@ -56,6 +56,9 @@ dependencies {
     implementation 'org.hibernate.validator:hibernate-validator:6.2.5.Final'
     runtimeOnly 'org.glassfish:javax.el:3.0.1-b12'
 
+    // Password hashing
+    implementation 'org.springframework.security:spring-security-crypto:5.8.16'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
