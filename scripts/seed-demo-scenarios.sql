@@ -192,9 +192,22 @@ WITH RECURSIVE date_range AS (
     FROM date_range
     WHERE spending_date < LAST_DAY(@today - INTERVAL 1 MONTH)
 )
--- 지난달 그래프는 요일 패턴에 날짜별 변동을 더해 자연스럽게 들쭉날쭉하게 보이도록 한다.
+-- 지난달 그래프는 저지출일과 지출이 몰린 날을 섞어 누적선의 기울기가 뚜렷하게 달라지도록 한다.
 SELECT u.id, dr.spending_date,
-       6500 + DAYOFWEEK(dr.spending_date) * 500 + MOD(DAY(dr.spending_date) * 1100, 2300)
+       CASE
+           WHEN DAY(dr.spending_date) = 12 THEN 50000
+           WHEN DAY(dr.spending_date) = 24 THEN 30000
+           ELSE CASE MOD(DAY(dr.spending_date), 8)
+               WHEN 0 THEN 18000
+           WHEN 1 THEN 3500
+           WHEN 2 THEN 7000
+           WHEN 3 THEN 14500
+           WHEN 4 THEN 5000
+           WHEN 5 THEN 11500
+           WHEN 6 THEN 8000
+           WHEN 7 THEN 15500
+           END
+       END
 FROM users u
 CROSS JOIN date_range dr
 WHERE u.email = @living_email;
