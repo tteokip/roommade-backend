@@ -54,6 +54,8 @@
     <tx:annotation-driven transaction-manager="transactionManager"/>
     <task:annotation-driven/>
 
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
     <bean id="koreaZoneId" class="java.time.ZoneId" factory-method="of">
         <constructor-arg value="Asia/Seoul"/>
     </bean>
