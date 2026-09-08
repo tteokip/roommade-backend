@@ -3,6 +3,7 @@ package com.roommade.domain.living.controller;
 import com.roommade.domain.living.code.LivingErrorCode;
 import com.roommade.domain.living.code.LivingSuccessCode;
 import com.roommade.domain.living.dto.response.DailyChallengeResponse;
+import com.roommade.domain.living.dto.response.LatestChallengeResultResponse;
 import com.roommade.domain.living.service.DailyChallengeService;
 import com.roommade.global.exception.BusinessException;
 import com.roommade.global.response.ApiResponse;
@@ -28,6 +29,14 @@ public class DailyChallengeController {
         validateUserId(userId);
         DailyChallengeResponse response = dailyChallengeService.getDailyChallenge(userId);
         return ApiResponse.success(LivingSuccessCode.DAILY_CHALLENGE_FOUND, response);
+    }
+
+    @GetMapping("/daily-challenges/latest-result")
+    public ApiResponse<LatestChallengeResultResponse> getLatestChallengeResult(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        validateUserId(userId);
+        LatestChallengeResultResponse response = dailyChallengeService.getLatestResult(userId);
+        return ApiResponse.success(LivingSuccessCode.DAILY_CHALLENGE_LATEST_RESULT_FOUND, response);
     }
 
     private void validateUserId(Long userId) {

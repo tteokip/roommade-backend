@@ -108,6 +108,21 @@ class HouseBalanceGameServiceImplTest {
     }
 
     @Test
+    @DisplayName("optionType이 null이면 OPTION이 비교 불가로 제외된다")
+    void nullOptionTypeIsNotComparable() {
+        HouseResponse houseA = house(
+                100_000_000L, 500_000L, 50_000L, new BigDecimal("30.00"), 8, 30, null);
+        HouseResponse houseB = house(
+                90_000_000L, 550_000L, 20_000L, new BigDecimal("28.00"), 5, 20, "풀옵션");
+        givenComparison(houseA, houseB);
+        givenAnswers();
+
+        BalanceGameQuestionsResponse response = houseBalanceGameService.getQuestions(USER_ID);
+
+        assertThat(questionIds(response)).containsExactly(1L, 2L, 4L, 5L, 6L);
+    }
+
+    @Test
     @DisplayName("MONTHLY_COST는 monthlyRent와 maintenanceFee의 합으로 비교한다")
     void calculatesMonthlyCostAsRentPlusMaintenanceFee() {
         // A: 400,000 + 200,000 = 600,000 / B: 500,000 + 50,000 = 550,000 → B가 더 저렴하다.
