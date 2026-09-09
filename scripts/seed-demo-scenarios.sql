@@ -245,14 +245,14 @@ UNION ALL
 SELECT id, DATE_FORMAT(@today - INTERVAL 2 MONTH, '%Y-%m'), 1380000
 FROM users WHERE email = @living_email;
 
--- 독립 후 생활 계정은 상점 가구 구매용 500코인과 전날 일일 챌린지 1단계 보상 20코인을 보유한다.
+-- 독립 후 생활 계정은 상점 가구 구매용 1,060코인과 전날 일일 챌린지 1단계 보상 20코인을 보유한다.
 -- 오늘의 퀴즈 정답 시 서비스가 50코인을 추가 지급한다.
 INSERT INTO coin_wallets (user_id, balance)
 SELECT id, 0 FROM users WHERE email = @preparing_email
 UNION ALL
 SELECT id, 0 FROM users WHERE email = @transition_email
 UNION ALL
-SELECT id, 520 FROM users WHERE email = @living_email;
+SELECT id, 1080 FROM users WHERE email = @living_email;
 
 -- 1번 계정은 15·30·45점 가구 선택권 3개를 미사용 상태로 둔다.
 INSERT INTO furniture_reward (user_id, reward_stage)
@@ -303,7 +303,7 @@ WHERE u.email = @transition_email;
 
 -- 독립 후 생활 계정은 과거에 구매한 웜 오크 가구 세트를 보유·배치해
 -- 방 꾸미기 완성 상태를 시연한다. 코지 코티지 세트는 미구매 상태로 남겨
--- 500코인으로 상점 구매 흐름도 이어서 시연할 수 있다.
+-- 시작 잔액 1,080코인으로 상점 구매 흐름도 이어서 시연할 수 있다.
 UPDATE user_furniture uf
 INNER JOIN furniture f ON f.id = uf.furniture_id
 INNER JOIN users u ON u.id = uf.user_id
