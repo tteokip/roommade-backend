@@ -105,6 +105,29 @@
         LIMIT #{size} OFFSET #{offset}
     </select>
 
+    <select id="findFeaturedPolicies" resultType="com.roommade.domain.policy.dto.response.YouthPolicyListResponse">
+        SELECT yp.youth_policy_id,
+               yp.policy_name,
+               yp.policy_keyword,
+               COALESCE(ypso.card_summary, yp.policy_description) AS card_summary,
+               yp.provider_institution_name,
+               yp.application_start_date,
+               yp.application_end_date,
+               CASE
+                   WHEN yp.application_start_date IS NOT NULL AND yp.application_end_date IS NOT NULL
+                       THEN CONCAT(DATE_FORMAT(yp.application_start_date, '%Y-%m-%d'), ' ~ ', DATE_FORMAT(yp.application_end_date, '%Y-%m-%d'))
+                   WHEN yp.application_start_date IS NOT NULL THEN CONCAT(DATE_FORMAT(yp.application_start_date, '%Y-%m-%d'), ' ~')
+                   WHEN yp.application_end_date IS NOT NULL THEN CONCAT('~ ', DATE_FORMAT(yp.application_end_date, '%Y-%m-%d'))
+                   ELSE yp.application_period_text
+               END AS application_period,
+               CASE WHEN yp.application_end_date IS NULL THEN NULL ELSE DATEDIFF(yp.application_end_date, CURDATE()) END AS d_day
+        FROM youth_policy yp
+        LEFT JOIN youth_policy_summary_override ypso ON ypso.policy_no = yp.policy_no
+        INNER JOIN demo_policy_feature dpf ON dpf.policy_no = yp.policy_no
+        INNER JOIN users u ON u.email = dpf.email
+        WHERE u.id = #{userId}
+        ORDER BY dpf.display_order
+    </select>
     <select id="countYouthPolicies" resultType="long">
         SELECT COUNT(*)
         FROM youth_policy yp

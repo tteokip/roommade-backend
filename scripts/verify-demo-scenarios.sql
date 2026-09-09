@@ -48,7 +48,8 @@ ORDER BY FIELD(
     'demo03@roommade.com'
 );
 
--- 1번 계정: RIR 35점 + 보증금 20점, 미사용 가구 선택권 3개를 확인한다.
+-- 1번 계정: 월급 250만·월세 80만, RIR 40.5점 + 보증금 15점 = 55.5점.
+-- 미사용 가구 선택권 3개를 확인한다.
 SELECT
     u.email,
     up.monthly_rent_limit * 100.0 / up.monthly_income AS rir_percent,
@@ -58,6 +59,7 @@ SELECT
         ELSE (up.monthly_income * 50 - up.monthly_rent_limit * 100) * 45.0
              / (up.monthly_income * 20)
     END AS rir_score,
+    LEAST(ip.current_deposit * 45.0 / up.deposit_limit, 45) AS deposit_score,
     ip.current_deposit,
     ip.house_compare_completed_at,
     (

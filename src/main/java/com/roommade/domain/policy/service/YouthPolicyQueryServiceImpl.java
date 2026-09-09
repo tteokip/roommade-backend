@@ -25,6 +25,21 @@ public class YouthPolicyQueryServiceImpl implements YouthPolicyQueryService {
 
     @Override
     @Transactional(readOnly = true)
+    public YouthPolicyPageResponse getFeaturedPolicies(Long userId, String region) {
+        resolveRegionCode(region);
+        List<YouthPolicyListResponse> featured = youthPolicyMapper.findFeaturedPolicies(userId);
+        if (featured.isEmpty()) {
+            return getYouthPolicies(userId, region, 1, 3);
+        }
+        UserPolicyProfileResponse profile = userProfileMapper.findPolicyProfileByUserId(userId);
+        if (profile == null) {
+            throw new BusinessException(YouthPolicyErrorCode.USER_PROFILE_NOT_FOUND);
+        }
+        return new YouthPolicyPageResponse(profile.getName(), featured, 1, 3, featured.size(), 1);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public YouthPolicyPageResponse getYouthPolicies(Long userId, String region, int page, int size) {
         validate(page, size);
         UserPolicyProfileResponse profile = userProfileMapper.findPolicyProfileByUserId(userId);

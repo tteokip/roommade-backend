@@ -10,6 +10,8 @@ SET @legacy_living_email = 'demo-living@roommade.local';
 
 START TRANSACTION;
 
+DELETE FROM demo_policy_feature WHERE email IN (@preparing_email, @transition_email, @living_email);
+
 DELETE dc FROM daily_challenges dc INNER JOIN daily_living_costs dlc ON dlc.id = dc.daily_living_cost_id INNER JOIN users u ON u.id = dlc.user_id WHERE u.email IN (@preparing_email, @transition_email, @living_email, @legacy_preparing_email, @legacy_transition_email, @legacy_living_email);
 DELETE uqa FROM user_quiz_attempts uqa INNER JOIN users u ON u.id = uqa.user_id WHERE u.email IN (@preparing_email, @transition_email, @living_email, @legacy_preparing_email, @legacy_transition_email, @legacy_living_email);
 DELETE pa FROM preference_answers pa INNER JOIN house_comparisons hc ON hc.id = pa.comparison_id INNER JOIN users u ON u.id = hc.user_id WHERE u.email IN (@preparing_email, @transition_email, @living_email, @legacy_preparing_email, @legacy_transition_email, @legacy_living_email);

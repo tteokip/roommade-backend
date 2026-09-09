@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.roommade.domain.policy.code.YouthPolicyErrorCode;
 import com.roommade.domain.policy.mapper.YouthPolicyMapper;
+import com.roommade.domain.policy.dto.response.YouthPolicyListResponse;
 import com.roommade.domain.user.dto.response.UserPolicyProfileResponse;
 import com.roommade.domain.user.mapper.UserProfileMapper;
 import com.roommade.global.exception.BusinessException;
@@ -45,6 +46,32 @@ class YouthPolicyQueryServiceImplTest {
 
         verify(youthPolicyMapper).countYouthPolicies("11", 25, 3_000L);
         verify(youthPolicyMapper).findYouthPolicies("11", 25, 3_000L, 0L, 10);
+    }
+
+    @Test
+    void featuredPoliciesKeepConfiguredOrderAndCount() {
+        YouthPolicyListResponse first = new YouthPolicyListResponse();
+        YouthPolicyListResponse second = new YouthPolicyListResponse();
+        when(youthPolicyMapper.findFeaturedPolicies(USER_ID)).thenReturn(List.of(first, second));
+        when(userProfileMapper.findPolicyProfileByUserId(USER_ID)).thenReturn(
+                new UserPolicyProfileResponse("시연", LocalDate.now().minusYears(25), 2_500_000L));
+
+        var result = youthPolicyQueryService.getFeaturedPolicies(USER_ID, "11");
+
+        assertThat(result.getContent()).containsExactly(first, second);
+        assertThat(result.getTotalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void ordinaryAccountFeaturedPoliciesUseExistingFilters() {
+        when(youthPolicyMapper.findFeaturedPolicies(USER_ID)).thenReturn(List.of());
+        when(userProfileMapper.findPolicyProfileByUserId(USER_ID)).thenReturn(
+                new UserPolicyProfileResponse("일반", LocalDate.now().minusYears(25).minusDays(1), 2_500_000L));
+        when(youthPolicyMapper.findYouthPolicies("11", 25, 3_000L, 0L, 3)).thenReturn(List.of());
+
+        youthPolicyQueryService.getFeaturedPolicies(USER_ID, "11");
+
+        verify(youthPolicyMapper).findYouthPolicies("11", 25, 3_000L, 0L, 3);
     }
 
     @Test

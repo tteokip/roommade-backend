@@ -102,14 +102,14 @@ INSERT INTO users (email, password_hash) VALUES
 (@transition_email, '$2a$10$JX1u9v/j8.yoLngLGPhh1ukcarDGzb3.3qI2Gblt6QYGLKKDFMzvC'),
 (@living_email, '$2a$10$JX1u9v/j8.yoLngLGPhh1ukcarDGzb3.3qI2Gblt6QYGLKKDFMzvC');
 
--- 1번 계정은 RIR 35점 + 보증금 20점, 2번 계정은 RIR 45점 + 보증금 45점으로 구성한다.
+-- 1번 계정은 RIR 40.5점 + 보증금 15점, 2번 계정은 RIR 45점 + 보증금 45점으로 구성한다.
 INSERT INTO user_profiles (
     user_id, name, birth_date, monthly_income,
     workplace_road_address, workplace_detail_address,
     deposit_limit, monthly_rent_limit
 )
-SELECT id, '김룸메', '1999-05-18', 3000000,
-       '서울특별시 영등포구 여의대로 24', '10층', 30000000, 1033333
+SELECT id, '김룸메', '1999-05-18', 2500000,
+       '서울특별시 영등포구 여의대로 24', '10층', 30000000, 800000
 FROM users
 WHERE email = @preparing_email
 UNION ALL
@@ -123,10 +123,11 @@ SELECT id, '김룸메', '1999-05-18', 3000000,
 FROM users
 WHERE email = @living_email;
 
--- 1) 독립 전: RIR 35점 + 보증금 약 44.44%(20점), 집 비교 점수 0 = 준비도 55.
+-- 1) 독립 전: 월급 250만 원, 월세 80만 원으로 RIR 32%(40.5점).
+--    보증금 1,000만/3,000만 원(15점), 집 비교 점수 0 = 준비도 55.5점.
 --    15·30·45점 가구 선택권 3개를 미사용 상태로 시연한다.
 INSERT INTO independence_progress (user_id, current_deposit)
-SELECT id, 13333333 FROM users WHERE email = @preparing_email;
+SELECT id, 10000000 FROM users WHERE email = @preparing_email;
 
 -- 2) 독립 전: RIR 45점 + 보증금 45점 = 준비도 90.
 --    집 비교를 완료해 100점을 만들고, 이어서 입주 확정까지 진행한다.
@@ -329,6 +330,17 @@ INSERT INTO daily_quizzes (quiz_date, quiz_question_id)
 VALUES (@today, @credit_question_id)
 ON DUPLICATE KEY UPDATE quiz_question_id = VALUES(quiz_question_id);
 
+-- 지원금 메인 시연 순서. 정책 원본의 자격·마감일을 변경하지 않는다.
+DELETE FROM demo_policy_feature WHERE email IN (@preparing_email, @transition_email, @living_email);
+INSERT INTO demo_policy_feature (email, policy_no, display_order) VALUES
+    (@preparing_email, '20260616005400113238', 1),
+    (@preparing_email, '20250316005400210632', 2),
+    (@preparing_email, '20250316005400210626', 3),
+    (@transition_email, '20260616005400113238', 1),
+    (@transition_email, '20250316005400210632', 2),
+    (@transition_email, '20250316005400210626', 3),
+    (@living_email, '20250617005400110952', 1),
+    (@living_email, '20250903005400211608', 2);
 COMMIT;
 
 -- 프론트 VITE_DEV_USER_ID 설정에 사용할 계정 ID 목록
