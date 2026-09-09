@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface YouthPolicyMapper {
+    List<YouthPolicyListResponse> findFeaturedPolicies(@Param("userId") Long userId);
     int upsert(YouthPolicy youthPolicy);
     Long findYouthPolicyIdByPolicyNo(@Param("policyNo") String policyNo);
     int deleteRegionsByYouthPolicyId(@Param("youthPolicyId") Long youthPolicyId);

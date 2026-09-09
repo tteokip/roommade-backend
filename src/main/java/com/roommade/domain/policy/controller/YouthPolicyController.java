@@ -22,6 +22,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class YouthPolicyController {
     private final YouthPolicyQueryService youthPolicyQueryService;
 
+    @GetMapping("/featured")
+    public ResponseEntity<ApiResponse<YouthPolicyPageResponse>> getFeaturedPolicies(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @RequestParam(required = false) String region) {
+        validateUserId(userId);
+        return ResponseEntity.ok(ApiResponse.success(
+                YouthPolicySuccessCode.YOUTH_POLICIES_RETRIEVED,
+                youthPolicyQueryService.getFeaturedPolicies(userId, region)));
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<YouthPolicyPageResponse>> getYouthPolicies(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
