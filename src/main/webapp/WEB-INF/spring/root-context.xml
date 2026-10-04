@@ -13,16 +13,16 @@
                             http://www.springframework.org/schema/task
                             http://www.springframework.org/schema/task/spring-task.xsd">
 
-    <context:property-placeholder location="classpath:db.properties" ignore-resource-not-found="true"/>
+    <context:property-placeholder location="classpath:application.properties" ignore-resource-not-found="true"/>
 
     <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
-        <property name="driverClassName" value="${jdbc.driver:com.mysql.cj.jdbc.Driver}"/>
-        <property name="jdbcUrl" value="${jdbc.url:jdbc:mysql://localhost:3306/roommade}"/>
-        <property name="username" value="${jdbc.username:root}"/>
-        <property name="password" value="${jdbc.password:}"/>
-        <property name="maximumPoolSize" value="${jdbc.pool.maximum-pool-size:10}"/>
-        <property name="minimumIdle" value="${jdbc.pool.minimum-idle:2}"/>
-        <property name="connectionTimeout" value="${jdbc.pool.connection-timeout-ms:30000}"/>
+        <property name="driverClassName" value="${DB_JDBC_DRIVER:com.mysql.cj.jdbc.Driver}"/>
+        <property name="jdbcUrl" value="${DB_JDBC_URL}"/>
+        <property name="username" value="${DB_USERNAME}"/>
+        <property name="password" value="${DB_PASSWORD}"/>
+        <property name="maximumPoolSize" value="${DB_POOL_MAXIMUM_SIZE:10}"/>
+        <property name="minimumIdle" value="${DB_POOL_MINIMUM_IDLE:2}"/>
+        <property name="connectionTimeout" value="${DB_POOL_CONNECTION_TIMEOUT_MS:30000}"/>
     </bean>
 
     <!--
