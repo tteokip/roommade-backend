@@ -1,0 +1,48 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [{ "expr": "sum(rate(roommade_http_requests_total[5m]))", "legendFormat": "RPS", "refId": "A" }],
+      "title": "요청 처리량 (RPS)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [{ "expr": "sum(rate(roommade_http_requests_total{status=~\"5..\"}[5m])) / sum(rate(roommade_http_requests_total[5m]))", "legendFormat": "5xx 비율", "refId": "A" }],
+      "title": "서버 오류 비율", 
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(roommade_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A" }],
+      "title": "p95 응답 시간", 
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [{ "expr": "sum(jvm_memory_used_bytes{area=\"heap\"}) / sum(jvm_memory_max_bytes{area=\"heap\"})", "legendFormat": "힙 사용률", "refId": "A" }],
+      "title": "JVM 힙 사용률", 
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 41,
+  "tags": ["roommade"],
+  "time": { "from": "now-6h", "to": "now" },
+  "title": "RoomMade Overview",
+  "uid": "roommade-overview",
+  "version": 1
+}

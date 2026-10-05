@@ -23,6 +23,7 @@ repositories {
 
 ext {
     springVersion = '5.3.39'
+    prometheusVersion = '1.9.0'
 }
 
 dependencies {
@@ -66,6 +67,11 @@ dependencies {
     // Logging
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.slf4j:jcl-over-slf4j:2.0.13'
+
+    // Prometheus metrics
+    implementation "io.prometheus:prometheus-metrics-core:${prometheusVersion}"
+    implementation "io.prometheus:prometheus-metrics-instrumentation-jvm:${prometheusVersion}"
+    implementation "io.prometheus:prometheus-metrics-exporter-servlet-javax:${prometheusVersion}"
 
     // OpenAI
     implementation 'com.openai:openai-java:4.54.0'
