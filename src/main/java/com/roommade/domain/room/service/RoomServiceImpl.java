@@ -33,18 +33,16 @@ public class RoomServiceImpl implements RoomService {
     private final CoinService coinService;
 
     @Override
-    @Transactional
     public RoomResponse getRoom(Long userId) {
-        ReadinessDiagnosisResponse readiness = synchronizeRewards(userId);
+        ReadinessDiagnosisResponse readiness =
+                preparationService.getReadinessDiagnosis(userId);
         return new RoomResponse(
                 readiness.getReadinessScore(),
                 roomMapper.findOwnedFurnitureByUserId(userId));
     }
 
     @Override
-    @Transactional
     public FurnitureRewardsResponse getPendingRewards(Long userId) {
-        synchronizeRewards(userId);
         List<FurnitureRewardResponse> rewards = roomMapper.findPendingRewardsByUserId(userId)
                 .stream()
                 .map(reward -> new FurnitureRewardResponse(
@@ -120,18 +118,20 @@ public class RoomServiceImpl implements RoomService {
 
     @Override
     @Transactional
-    public void grantAllBasicFurniture(Long userId) {
-        roomMapper.insertAllMissingBasicFurniture(userId);
+    public void initializeRoom(Long userId) {
+        roomMapper.insertInitialFurniture(userId);
+        synchronizeReadinessRewards(userId);
     }
 
-    private ReadinessDiagnosisResponse synchronizeRewards(Long userId) {
+    @Override
+    @Transactional
+    public void synchronizeReadinessRewards(Long userId) {
         ReadinessDiagnosisResponse readiness =
                 preparationService.getReadinessDiagnosis(userId);
-        roomMapper.insertInitialFurniture(userId);
 
         if (readiness.getIndependenceStatus() != IndependenceStatus.PREPARING) {
             roomMapper.insertAllMissingBasicFurniture(userId);
-            return readiness;
+            return;
         }
 
         BigDecimal score = readiness.getReadinessScore();
@@ -140,6 +140,5 @@ public class RoomServiceImpl implements RoomService {
                 roomMapper.insertRewardIfAbsent(userId, stage);
             }
         }
-        return readiness;
     }
 }

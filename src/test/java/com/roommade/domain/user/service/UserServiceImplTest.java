@@ -11,6 +11,7 @@ import com.roommade.domain.user.dto.request.UserLoginRequest;
 import com.roommade.domain.user.dto.response.UserLoginSourceResponse;
 import com.roommade.domain.user.dto.response.UserSignupResponse;
 import com.roommade.domain.user.mapper.UserMapper;
+import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,11 +30,14 @@ class UserServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private RoomService roomService;
+
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl(userMapper, passwordEncoder);
+        userService = new UserServiceImpl(userMapper, passwordEncoder, roomService);
     }
 
     @Test
@@ -51,6 +55,7 @@ class UserServiceImplTest {
         then(userMapper).should().insertProfile(7L, request);
         then(userMapper).should().insertCoinWallet(7L);
         then(userMapper).should().insertIndependenceProgress(7L);
+        then(roomService).should().initializeRoom(7L);
     }
 
     @Test
@@ -66,6 +71,7 @@ class UserServiceImplTest {
         then(userMapper).should().existsByEmail(request.getEmail());
         then(userMapper).shouldHaveNoMoreInteractions();
         then(passwordEncoder).shouldHaveNoInteractions();
+        then(roomService).shouldHaveNoInteractions();
     }
 
     @Test

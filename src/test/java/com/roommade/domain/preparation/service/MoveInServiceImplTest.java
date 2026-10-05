@@ -82,7 +82,7 @@ class MoveInServiceImplTest {
         assertThat(result.getMovedInAt()).isNull();
         assertThat(result.getIndependenceStatus())
                 .isEqualTo(IndependenceStatus.MOVE_IN_SCHEDULED);
-        verify(roomService).grantAllBasicFurniture(USER_ID);
+        verify(roomService).synchronizeReadinessRewards(USER_ID);
         verify(livingRentService).setMonthlyRent(USER_ID, 700_000L);
     }
 
@@ -116,7 +116,7 @@ class MoveInServiceImplTest {
         assertThat(result.isManualRentInputRequired()).isTrue();
         verifyNoInteractions(houseComparisonService);
         verifyNoInteractions(livingRentService);
-        verify(roomService).grantAllBasicFurniture(USER_ID);
+        verify(roomService).synchronizeReadinessRewards(USER_ID);
     }
 
     @Test

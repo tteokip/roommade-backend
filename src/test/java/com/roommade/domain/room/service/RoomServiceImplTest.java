@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.roommade.domain.coin.service.CoinService;
@@ -45,13 +46,25 @@ class RoomServiceImplTest {
     private RoomServiceImpl roomService;
 
     @Test
-    void synchronizesReachedRewardStagesAndReturnsOwnedFurniture() {
+    void returnsReadinessAndOwnedFurnitureWithoutWritingRoomData() {
         RoomFurnitureResponse bed = furniture(10L, "기본 침대", true);
         when(preparationService.getReadinessDiagnosis(USER_ID))
                 .thenReturn(readiness("30.00", IndependenceStatus.PREPARING));
         when(roomMapper.findOwnedFurnitureByUserId(USER_ID)).thenReturn(List.of(bed));
 
         assertThat(roomService.getRoom(USER_ID).getFurniture()).containsExactly(bed);
+
+        verify(roomMapper, never()).insertInitialFurniture(USER_ID);
+        verify(roomMapper, never()).insertAllMissingBasicFurniture(USER_ID);
+        verify(roomMapper, never()).insertRewardIfAbsent(USER_ID, 15);
+    }
+
+    @Test
+    void initializesRoomAndSynchronizesReachedRewardStages() {
+        when(preparationService.getReadinessDiagnosis(USER_ID))
+                .thenReturn(readiness("30.00", IndependenceStatus.PREPARING));
+
+        roomService.initializeRoom(USER_ID);
 
         verify(roomMapper).insertInitialFurniture(USER_ID);
         verify(roomMapper).insertRewardIfAbsent(USER_ID, 15);
@@ -63,11 +76,9 @@ class RoomServiceImplTest {
     void grantsAllBasicFurnitureAfterMoveInWasScheduled() {
         when(preparationService.getReadinessDiagnosis(USER_ID))
                 .thenReturn(readiness("45.00", IndependenceStatus.MOVE_IN_SCHEDULED));
-        when(roomMapper.findOwnedFurnitureByUserId(USER_ID)).thenReturn(List.of());
 
-        roomService.getRoom(USER_ID);
+        roomService.synchronizeReadinessRewards(USER_ID);
 
-        verify(roomMapper).insertInitialFurniture(USER_ID);
         verify(roomMapper).insertAllMissingBasicFurniture(USER_ID);
         verify(roomMapper, never()).insertRewardIfAbsent(USER_ID, 15);
     }
@@ -79,8 +90,6 @@ class RoomServiceImplTest {
                 new FurnitureRewardSourceResponse(100L, 15, grantedAt);
         FurnitureOptionResponse option =
                 new FurnitureOptionResponse(10L, 2L, "침대", "기본 침대", "/bed.png");
-        when(preparationService.getReadinessDiagnosis(USER_ID))
-                .thenReturn(readiness("15.00", IndependenceStatus.PREPARING));
         when(roomMapper.findPendingRewardsByUserId(USER_ID)).thenReturn(List.of(reward));
         when(roomMapper.findSelectableFurniture(USER_ID, 15)).thenReturn(List.of(option));
 
@@ -90,6 +99,10 @@ class RoomServiceImplTest {
                     assertThat(result.getRewardId()).isEqualTo(100L);
                     assertThat(result.getChoices()).containsExactly(option);
                 });
+
+        verifyNoInteractions(preparationService);
+        verify(roomMapper, never()).insertInitialFurniture(USER_ID);
+        verify(roomMapper, never()).insertRewardIfAbsent(USER_ID, 15);
     }
 
     @Test
