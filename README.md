@@ -131,6 +131,9 @@ src/main/webapp/WEB-INF/
    curl http://localhost:8080/
    # roommade-backend is running
 
+   curl http://localhost:8080/health
+   # {"status":"UP"}
+
    curl http://localhost:8080/health/db
    # {"status":"UP","database":"UP"}
    ```
