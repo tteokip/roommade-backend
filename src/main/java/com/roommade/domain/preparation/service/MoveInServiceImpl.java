@@ -37,7 +37,7 @@ public class MoveInServiceImpl implements MoveInService {
         applyRegisteredHouseRent(userId, confirmedHouseId);
         MoveInStateSourceResponse state = preparationService.scheduleMoveIn(
                 userId, confirmedHouseId, request.getMoveInDate());
-        roomService.grantAllBasicFurniture(userId);
+        roomService.synchronizeReadinessRewards(userId);
 
         return new MoveInConfirmationResponse(
                 confirmedHouseId,

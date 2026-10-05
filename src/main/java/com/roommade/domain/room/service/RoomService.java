@@ -19,5 +19,7 @@ public interface RoomService {
 
     RoomFurnitureResponse purchaseFurniture(Long userId, Long furnitureId);
 
-    void grantAllBasicFurniture(Long userId);
+    void initializeRoom(Long userId);
+
+    void synchronizeReadinessRewards(Long userId);
 }

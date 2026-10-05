@@ -5,6 +5,7 @@ import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
 import com.roommade.domain.house.mapper.HouseComparisonMapper;
 import com.roommade.domain.preparation.service.PreparationService;
+import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -21,6 +22,7 @@ public class HouseComparisonServiceImpl implements HouseComparisonService {
 
     private final HouseComparisonMapper houseComparisonMapper;
     private final PreparationService preparationService;
+    private final RoomService roomService;
 
     @Override
     public HouseComparisonCurrentResponse getCurrentComparison(Long userId) {
@@ -44,6 +46,7 @@ public class HouseComparisonServiceImpl implements HouseComparisonService {
         }
 
         preparationService.markHouseComparisonCompleted(userId);
+        roomService.synchronizeReadinessRewards(userId);
 
         return houseComparisonMapper.findCurrentByUserId(userId);
     }

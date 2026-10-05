@@ -7,6 +7,7 @@ import com.roommade.domain.user.dto.response.UserLoginResponse;
 import com.roommade.domain.user.dto.response.UserLoginSourceResponse;
 import com.roommade.domain.user.dto.response.UserSignupResponse;
 import com.roommade.domain.user.mapper.UserMapper;
+import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -21,6 +22,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final RoomService roomService;
 
     @Override
     @Transactional
@@ -39,6 +41,7 @@ public class UserServiceImpl implements UserService {
         userMapper.insertProfile(userId, request);
         userMapper.insertCoinWallet(userId);
         userMapper.insertIndependenceProgress(userId);
+        roomService.initializeRoom(userId);
 
         return new UserSignupResponse(userId, request.getEmail());
     }

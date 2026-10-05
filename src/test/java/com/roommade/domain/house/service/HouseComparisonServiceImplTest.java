@@ -14,6 +14,7 @@ import com.roommade.domain.house.dto.request.HouseRegisterRequest;
 import com.roommade.domain.house.dto.response.HouseComparisonCurrentResponse;
 import com.roommade.domain.house.mapper.HouseComparisonMapper;
 import com.roommade.domain.preparation.service.PreparationService;
+import com.roommade.domain.room.service.RoomService;
 import com.roommade.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ class HouseComparisonServiceImplTest {
 
     @Mock
     private PreparationService preparationService;
+
+    @Mock
+    private RoomService roomService;
 
     @InjectMocks
     private HouseComparisonServiceImpl houseComparisonService;
@@ -83,6 +87,7 @@ class HouseComparisonServiceImplTest {
         verify(houseComparisonMapper).insertComparison(userId);
         verify(houseComparisonMapper).insertHouse(100L, "A", request);
         verify(preparationService).markHouseComparisonCompleted(userId);
+        verify(roomService).synchronizeReadinessRewards(userId);
     }
 
     @Test
@@ -104,6 +109,7 @@ class HouseComparisonServiceImplTest {
         verify(houseComparisonMapper, never()).insertComparison(any());
         verify(houseComparisonMapper).insertHouse(200L, "B", request);
         verify(preparationService).markHouseComparisonCompleted(userId);
+        verify(roomService).synchronizeReadinessRewards(userId);
     }
 
     @Test
@@ -118,7 +124,7 @@ class HouseComparisonServiceImplTest {
                 .extracting(ex -> ((BusinessException) ex).getErrorCode())
                 .isEqualTo(HouseErrorCode.INVALID_HOUSE_TYPE);
 
-        verifyNoInteractions(houseComparisonMapper, preparationService);
+        verifyNoInteractions(houseComparisonMapper, preparationService, roomService);
     }
 
     @Test
@@ -139,6 +145,7 @@ class HouseComparisonServiceImplTest {
                 .isEqualTo(HouseErrorCode.HOUSE_SLOT_ALREADY_OCCUPIED);
 
         verifyNoInteractions(preparationService);
+        verifyNoInteractions(roomService);
     }
 
     @Test
