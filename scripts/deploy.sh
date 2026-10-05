@@ -13,15 +13,15 @@ Usage:
 
 Required options:
   --war PATH           Path to the WAR file to deploy.
-  --webapps-dir PATH   Tomcat webapps directory. The WAR is deployed as ROOT.war.
+  --webapps-dir PATH   Tomcat webapps directory. The WAR is deployed as roommade.war.
   --service-name NAME  systemd service name for Tomcat.
   --health-url URL     Health endpoint expected to return HTTP 200.
 
 Optional options:
   --backup-dir PATH    Directory for previous WAR backups.
                        Default: <webapps-dir>/../backups
-  --tomcat-user USER   Owner of ROOT.war. Default: User= in the systemd unit.
-  --tomcat-group GROUP Group of ROOT.war. Default: Group= in the systemd unit.
+  --tomcat-user USER   Owner of roommade.war. Default: User= in the systemd unit.
+  --tomcat-group GROUP Group of roommade.war. Default: Group= in the systemd unit.
   --health-timeout N   Seconds to wait for the health endpoint. Default: 30
   --help               Show this help message.
 EOF
@@ -121,10 +121,11 @@ if [[ -z "${BACKUP_DIR}" ]]; then
     BACKUP_DIR="$(dirname "${WEBAPPS_DIR}")/backups"
 fi
 
-TARGET_WAR="${WEBAPPS_DIR}/ROOT.war"
-EXPLODED_APP_DIR="${WEBAPPS_DIR}/ROOT"
+APP_NAME="roommade"
+TARGET_WAR="${WEBAPPS_DIR}/${APP_NAME}.war"
+EXPLODED_APP_DIR="${WEBAPPS_DIR}/${APP_NAME}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-TEMP_WAR="${WEBAPPS_DIR}/.ROOT-${TIMESTAMP}.war"
+TEMP_WAR="${WEBAPPS_DIR}/.${APP_NAME}-${TIMESTAMP}.war"
 BACKUP_WAR=""
 DEPLOYED=false
 TOMCAT_STOPPED=false
@@ -172,9 +173,9 @@ rollback() {
             fi
         else
             if rm -f "${TARGET_WAR}"; then
-                echo "기존 WAR가 없어 새 ROOT.war를 제거했습니다." >&2
+                echo "기존 WAR가 없어 새 ${APP_NAME}.war를 제거했습니다." >&2
             else
-                echo "경고: 새 ROOT.war 제거에 실패했습니다: ${TARGET_WAR}" >&2
+                echo "경고: 새 ${APP_NAME}.war 제거에 실패했습니다: ${TARGET_WAR}" >&2
             fi
         fi
     fi
@@ -203,7 +204,7 @@ TOMCAT_STOPPED=true
 echo "Tomcat 중지 완료: ${SERVICE_NAME}"
 
 if [[ -f "${TARGET_WAR}" ]]; then
-    BACKUP_WAR="${BACKUP_DIR}/ROOT-${TIMESTAMP}.war"
+    BACKUP_WAR="${BACKUP_DIR}/${APP_NAME}-${TIMESTAMP}.war"
     cp -p "${TARGET_WAR}" "${BACKUP_WAR}"
     echo "기존 WAR 백업 완료: ${BACKUP_WAR}"
 fi
