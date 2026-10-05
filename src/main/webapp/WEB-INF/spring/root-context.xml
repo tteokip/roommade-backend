@@ -3,30 +3,42 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:task="http://www.springframework.org/schema/task"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
                             http://www.springframework.org/schema/beans/spring-beans.xsd
                             http://www.springframework.org/schema/context
                             http://www.springframework.org/schema/context/spring-context.xsd
                             http://www.springframework.org/schema/tx
-                            http://www.springframework.org/schema/tx/spring-tx.xsd">
+                            http://www.springframework.org/schema/tx/spring-tx.xsd
+                            http://www.springframework.org/schema/task
+                            http://www.springframework.org/schema/task/spring-task.xsd">
 
-    <context:property-placeholder location="classpath:db.properties" ignore-resource-not-found="true"/>
+    <context:property-placeholder location="classpath:application.properties" ignore-resource-not-found="true"/>
 
-    <!--
-        db.properties가 없거나 값이 비어 있어도(DB 미기동 상태) 기동은 되도록
-        DriverManagerDataSource를 사용한다. 실제 커넥션은 첫 쿼리 시점에 시도된다.
-        Docker 기반 DB 구성은 별도 작업으로 진행 예정.
-    -->
-    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="${jdbc.driver:com.mysql.cj.jdbc.Driver}"/>
-        <property name="url" value="${jdbc.url:jdbc:mysql://localhost:3306/roommade}"/>
-        <property name="username" value="${jdbc.username:root}"/>
-        <property name="password" value="${jdbc.password:}"/>
+    <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+        <property name="driverClassName" value="${DB_JDBC_DRIVER:com.mysql.cj.jdbc.Driver}"/>
+        <property name="jdbcUrl" value="${DB_JDBC_URL}"/>
+        <property name="username" value="${DB_USERNAME}"/>
+        <property name="password" value="${DB_PASSWORD}"/>
+        <property name="maximumPoolSize" value="${DB_POOL_MAXIMUM_SIZE:10}"/>
+        <property name="minimumIdle" value="${DB_POOL_MINIMUM_IDLE:2}"/>
+        <property name="connectionTimeout" value="${DB_POOL_CONNECTION_TIMEOUT_MS:30000}"/>
     </bean>
 
-    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    <!--
+        Flyway 마이그레이션을 기동 시점에 실행한다. 실패하면(DB 미기동 포함)
+        컨텍스트 로딩이 중단되어 앱이 뜨지 않는다 — 스키마가 안 맞는 코드가
+        서비스되는 것을 막기 위한 의도적인 fail-fast다.
+    -->
+    <bean id="flywayMigrator" class="com.roommade.global.config.FlywayMigrator" init-method="migrate" depends-on="dataSource">
         <property name="dataSource" ref="dataSource"/>
-        <property name="mapperLocations" value="classpath:mapper/**/*.xml"/>
+        <property name="locations" value="classpath:db/migration"/>
+    </bean>
+
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean" depends-on="flywayMigrator">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <property name="mapperLocations" value="classpath*:mapper/**/*.xml"/>
     </bean>
 
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
@@ -40,9 +52,24 @@
     </bean>
 
     <tx:annotation-driven transaction-manager="transactionManager"/>
+    <task:annotation-driven/>
+
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+
+    <bean id="koreaZoneId" class="java.time.ZoneId" factory-method="of">
+        <constructor-arg value="Asia/Seoul"/>
+    </bean>
+    <bean id="clock" class="java.time.Clock" factory-method="system">
+        <constructor-arg ref="koreaZoneId"/>
+    </bean>
+
+    <!-- API 키가 없어도 다른 기능은 기동되도록 지연 생성한다. -->
+    <bean id="openAiClient" class="com.openai.client.okhttp.OpenAIOkHttpClient"
+          factory-method="fromEnv" lazy-init="true"/>
 
     <context:component-scan base-package="com.roommade">
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+        <context:exclude-filter type="annotation" expression="org.springframework.web.bind.annotation.ControllerAdvice"/>
     </context:component-scan>
 
 </beans>

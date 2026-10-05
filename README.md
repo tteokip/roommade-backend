@@ -10,17 +10,31 @@
 - Gradle
 - Tomcat (로컬 구동: Gretty 플러그인)
 - MySQL (Docker Compose로 로컬 개발 환경 구성)
+- Flyway (DB 스키마 마이그레이션)
+- OpenAI Java SDK (매물 이미지 정보 추출)
 - Lombok
 - Logback
+
+## 공통 API 규약
+
+- 모든 도메인 API는 `ApiResponse<T>`를 사용해 `success`, `code`, `message`, `data`를 일관되게 반환합니다.
+- 성공 응답은 도메인별 `SuccessCode`, 예상 가능한 도메인 오류는 `BusinessException`과 도메인별 `ErrorCode`로
+  처리합니다.
+- `@Valid` 검증 오류, 잘못된 JSON, 처리되지 않은 예외는 `GlobalExceptionHandler`가 공통 응답 형식으로 변환합니다.
+- 데이터소스는 HikariCP를 사용하고, DB 마이그레이션은 Flyway가 애플리케이션 기동 시 실행합니다.
 
 ## 디렉터리 구조
 
 ```text
 src/main/java/com/roommade/
-├── domain/                    # 비즈니스 도메인 (도메인 확정 후 추가)
-│   └── {domain}/
+├── domain/                    # 비즈니스 도메인
+│   └── {user, preparation, room, coin, quiz, living, house, policy, financialproduct}/
+│       ├── client/            # 외부 API 연동이 필요한 도메인에서만 사용
 │       ├── controller/        # API 진입점
-│       ├── dto/               # 요청·응답 객체
+│       ├── code/              # 도메인 성공·오류 코드
+│       ├── dto/
+│       │   ├── request/       # 요청 객체
+│       │   └── response/      # 응답 객체
 │       ├── mapper/            # MyBatis 매퍼 인터페이스
 │       └── service/           # 비즈니스 로직
 └── global/
@@ -30,6 +44,7 @@ src/main/java/com/roommade/
 
 src/main/resources/
 ├── db.properties.sample   # DB 접속 정보 샘플 (실제 db.properties는 gitignore)
+├── db/migration/           # Flyway 마이그레이션 (V1__xxx.sql, ...)
 ├── logback.xml
 └── mapper/                 # MyBatis XML 매퍼
 
@@ -55,14 +70,42 @@ src/main/webapp/WEB-INF/
 
    정보가 정상적으로 출력되면 실행 중인 것입니다. 출력되지 않으면 Docker Desktop을 먼저 켜주세요.
 
-3. 환경 변수 파일과 DB 접속 정보 파일을 준비합니다. 두 파일 모두 로컬 전용 값이며 커밋되지 않습니다(`.gitignore` 처리됨).
+3. 환경 변수 파일을 준비합니다. `.env`는 로컬 전용 값이며 커밋되지 않습니다(`.gitignore` 처리됨).
 
    | macOS / Linux / Git Bash | Windows (cmd) | Windows (PowerShell) |
    |---|---|---|
    | `cp .env.sample .env` | `copy .env.sample .env` | `Copy-Item .env.sample .env` |
-   | `cp src/main/resources/db.properties.sample src/main/resources/db.properties` | `copy src\main\resources\db.properties.sample src\main\resources\db.properties` | `Copy-Item src\main\resources\db.properties.sample src\main\resources\db.properties` |
 
-   `.env`의 포트·계정·DB명을 바꿨다면 `db.properties`도 함께 맞춰주세요.
+   로컬 `appRun`은 `DB_*`를 우선 사용하며, 값이 없으면 `.env`의 `MYSQL_PORT`, `MYSQL_DATABASE`,
+   `MYSQL_USER`, `MYSQL_PASSWORD`로 DB 접속 정보를 구성합니다. 운영 환경에서는 `.env`를 배포하지 않고
+   Tomcat 프로세스에 `DB_*` 환경 변수를 주입합니다.
+
+   | 환경 변수 | 용도 | 운영 환경 |
+   |---|---|---|
+   | `DB_JDBC_URL` | MySQL JDBC URL | 필수 |
+   | `DB_USERNAME` | DB 계정 | 필수 |
+   | `DB_PASSWORD` | DB 비밀번호 | 필수 |
+   | `DB_JDBC_DRIVER` | JDBC 드라이버 | 선택, 기본값 `com.mysql.cj.jdbc.Driver` |
+   | `DB_POOL_MAXIMUM_SIZE` | Hikari 최대 커넥션 수 | 선택, 기본값 `10` |
+   | `DB_POOL_MINIMUM_IDLE` | Hikari 최소 유휴 커넥션 수 | 선택, 기본값 `2` |
+   | `DB_POOL_CONNECTION_TIMEOUT_MS` | Hikari 연결 제한 시간(ms) | 선택, 기본값 `30000` |
+
+   매물 이미지 분석 API를 사용하려면 `.env`의 `OPENAI_API_KEY`를 입력합니다. 비워두어도
+   빌드와 서버 기동은 가능하며, 분석 API 호출만 실패합니다.
+
+   ```env
+   OPENAI_API_KEY=발급받은 키
+   ```
+
+   통근시간 계산 API를 사용하려면 일반 TMAP과 TMAP 대중교통 상품을 모두 구독한 앱 키를
+   `.env`의 `TMAP_API_KEY`에 입력합니다.
+
+   ```env
+   TMAP_API_KEY=발급받은 키
+   ```
+
+   로컬 `appRun`은 `.env`의 값을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
+   시크릿으로 주입하며, 실제 키와 DB 비밀번호는 Git 추적 파일이나 WAR에 넣지 않습니다.
 
 4. Docker로 로컬 MySQL을 띄우고, 정상 기동(`healthy`)될 때까지 기다립니다.
 
@@ -88,9 +131,18 @@ src/main/webapp/WEB-INF/
    curl http://localhost:8080/
    # roommade-backend is running
 
+   curl http://localhost:8080/health
+   # {"status":"UP"}
+
    curl http://localhost:8080/health/db
    # {"status":"UP","database":"UP"}
    ```
+
+## DB 스키마 마이그레이션 (Flyway)
+
+- 스키마 변경은 `src/main/resources/db/migration/`에 `V{다음 번호}__{설명}.sql` 파일을 추가하는 방식으로 관리합니다.
+- 이미 적용된 마이그레이션 파일은 수정하지 않고, 항상 새 버전 파일을 추가합니다.
+- 서버 기동 시 자동으로 적용되며, **마이그레이션이 실패하면 서버도 기동되지 않습니다.** DB가 꺼져 있는 상태로는 서버를 띄울 수 없으니, 반드시 `docker compose up -d`로 MySQL을 먼저 켜주세요.
 
 ## MySQL 컨테이너 종료
 

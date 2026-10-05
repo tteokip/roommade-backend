@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -16,6 +16,20 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: roommade
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout
@@ -32,3 +46,7 @@ jobs:
 
       - name: Build with Gradle (compile + test + package)
         run: ./gradlew build
+        env:
+          DB_JDBC_URL: "jdbc:mysql://127.0.0.1:3306/roommade?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+          DB_USERNAME: root
+          DB_PASSWORD: ""

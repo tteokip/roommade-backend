@@ -13,12 +13,17 @@ java {
     }
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
 repositories {
     mavenCentral()
 }
 
 ext {
     springVersion = '5.3.39'
+    prometheusVersion = '1.9.0'
 }
 
 dependencies {
@@ -28,6 +33,9 @@ dependencies {
     implementation "org.springframework:spring-tx:${springVersion}"
     implementation "org.springframework:spring-context:${springVersion}"
 
+    // Connection pool
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+
     // MyBatis
     implementation 'org.mybatis:mybatis:3.5.16'
     implementation 'org.mybatis:mybatis-spring:2.1.2'
@@ -35,9 +43,22 @@ dependencies {
     // JDBC / DB
     runtimeOnly 'com.mysql:mysql-connector-j:8.4.0'
 
+    // Flyway (DB 스키마 마이그레이션)
+    implementation 'org.flywaydb:flyway-core:13.3.0'
+    runtimeOnly 'org.flywaydb:flyway-mysql:13.3.0'
+
     // Servlet / JSON
     providedCompile 'javax.servlet:javax.servlet-api:4.0.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2'
+
+    // Bean validation (for @Valid request DTOs)
+    implementation 'javax.validation:validation-api:2.0.1.Final'
+    implementation 'org.hibernate.validator:hibernate-validator:6.2.5.Final'
+    runtimeOnly 'org.glassfish:javax.el:3.0.1-b12'
+
+    // Password hashing
+    implementation 'org.springframework.security:spring-security-crypto:5.8.16'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.34'
@@ -46,6 +67,33 @@ dependencies {
     // Logging
     implementation 'ch.qos.logback:logback-classic:1.5.6'
     implementation 'org.slf4j:jcl-over-slf4j:2.0.13'
+
+    // Prometheus metrics
+    implementation "io.prometheus:prometheus-metrics-core:${prometheusVersion}"
+    implementation "io.prometheus:prometheus-metrics-instrumentation-jvm:${prometheusVersion}"
+    implementation "io.prometheus:prometheus-metrics-exporter-servlet-javax:${prometheusVersion}"
+
+    // OpenAI
+    implementation 'com.openai:openai-java:4.54.0'
+
+    // Test
+    testImplementation "org.springframework:spring-test:${springVersion}"
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.mockito:mockito-core:5.12.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.12.0'
+    testImplementation 'org.assertj:assertj-core:3.26.3'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+    testImplementation 'com.jayway.jsonpath:json-path:2.9.0'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.named('processResources') {
+    // 로컬 DB 접속 정보는 WAR에 포함하지 않고 환경 변수로만 주입한다.
+    exclude 'db.properties'
 }
 
 gretty {
@@ -53,3 +101,49 @@ gretty {
     servletContainer = 'tomcat9'
     httpPort = 8080
 }
+
+// 로컬 appRun에서만 .env의 값을 서버 JVM에 전달하며, 운영체제 환경 변수를 우선한다.
+// 운영 환경은 Tomcat 프로세스 환경 변수로 같은 값을 주입한다.
+def dotEnvValues = [:]
+def dotEnvFile = file("${rootDir}/.env")
+if (dotEnvFile.exists()) {
+    dotEnvFile.eachLine { line ->
+        def trimmed = line.trim()
+        if (trimmed && !trimmed.startsWith('#') && trimmed.contains('=')) {
+            def separatorIndex = trimmed.indexOf('=')
+            dotEnvValues[trimmed.substring(0, separatorIndex).trim()] = trimmed.substring(separatorIndex + 1).trim()
+        }
+    }
+}
+
+// envKey: .env에서 읽어올 이름, systemPropertyName: 서버 JVM에 심을 시스템 프로퍼티 이름
+// (OpenAI SDK의 fromEnv()는 openai.apiKey라는 고정된 이름을 보므로 두 이름이 다를 수 있다).
+def passDotEnvValueToLocalTasks = { String envKey, String systemPropertyName, List<String> taskNames, Closure<String> fallbackValue = null ->
+    if (System.getenv(envKey)) {
+        return
+    }
+    def valueFromDotEnv = dotEnvValues[envKey] ?: fallbackValue?.call()
+    if (valueFromDotEnv) {
+        afterEvaluate {
+            taskNames.each { taskName ->
+                tasks.named(taskName).configure {
+                    systemProperty(systemPropertyName, valueFromDotEnv)
+                }
+            }
+        }
+    }
+}
+
+passDotEnvValueToLocalTasks('DB_JDBC_URL', 'DB_JDBC_URL', ['appRun', 'test']) {
+    def port = dotEnvValues['MYSQL_PORT'] ?: '3306'
+    def database = dotEnvValues['MYSQL_DATABASE'] ?: 'roommade'
+    return "jdbc:mysql://localhost:${port}/${database}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+}
+passDotEnvValueToLocalTasks('DB_USERNAME', 'DB_USERNAME', ['appRun', 'test']) { dotEnvValues['MYSQL_USER'] }
+passDotEnvValueToLocalTasks('DB_PASSWORD', 'DB_PASSWORD', ['appRun', 'test']) { dotEnvValues['MYSQL_PASSWORD'] }
+passDotEnvValueToLocalTasks('DB_JDBC_DRIVER', 'DB_JDBC_DRIVER', ['appRun', 'test'])
+passDotEnvValueToLocalTasks('DB_POOL_MAXIMUM_SIZE', 'DB_POOL_MAXIMUM_SIZE', ['appRun', 'test'])
+passDotEnvValueToLocalTasks('DB_POOL_MINIMUM_IDLE', 'DB_POOL_MINIMUM_IDLE', ['appRun', 'test'])
+passDotEnvValueToLocalTasks('DB_POOL_CONNECTION_TIMEOUT_MS', 'DB_POOL_CONNECTION_TIMEOUT_MS', ['appRun', 'test'])
+passDotEnvValueToLocalTasks('OPENAI_API_KEY', 'openai.apiKey', ['appRun'])
+passDotEnvValueToLocalTasks('TMAP_API_KEY', 'TMAP_API_KEY', ['appRun'])

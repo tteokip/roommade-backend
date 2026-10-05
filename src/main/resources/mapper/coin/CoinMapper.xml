@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.coin.mapper.CoinMapper">
+
+    <select id="findBalanceByUserId" resultType="int">
+        SELECT COALESCE(cw.balance, 0)
+        FROM users u
+        LEFT JOIN coin_wallets cw ON cw.user_id = u.id
+        WHERE u.id = #{userId}
+    </select>
+
+    <insert id="insertWalletIfAbsent">
+        INSERT IGNORE INTO coin_wallets (user_id, balance)
+        SELECT id, 0
+        FROM users
+        WHERE id = #{userId}
+    </insert>
+
+    <update id="updateBalanceForEarning">
+        UPDATE coin_wallets
+        SET balance = balance + #{amount},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updateBalanceForSpending">
+        UPDATE coin_wallets
+        SET balance = balance - #{amount},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+          AND balance &gt;= #{amount}
+    </update>
+
+</mapper>

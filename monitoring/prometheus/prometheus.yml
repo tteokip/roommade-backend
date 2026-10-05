@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: roommade-backend
+    metrics_path: /metrics
+    static_configs:
+      # Docker Desktop에서 호스트의 로컬 백엔드(8080)를 수집합니다.
+      # 운영 배포 시에는 배포 환경에서 접근 가능한 백엔드 주소로 변경하세요.
+      - targets: ["host.docker.internal:8080"]

@@ -1,0 +1,144 @@
+package com.roommade.domain.room.service;
+
+import com.roommade.domain.coin.service.CoinService;
+import com.roommade.domain.preparation.dto.response.IndependenceStatus;
+import com.roommade.domain.preparation.dto.response.ReadinessDiagnosisResponse;
+import com.roommade.domain.preparation.service.PreparationService;
+import com.roommade.domain.room.code.RoomErrorCode;
+import com.roommade.domain.room.dto.response.FurnitureRewardResponse;
+import com.roommade.domain.room.dto.response.FurnitureRewardSourceResponse;
+import com.roommade.domain.room.dto.response.FurnitureRewardsResponse;
+import com.roommade.domain.room.dto.response.RoomFurnitureResponse;
+import com.roommade.domain.room.dto.response.RoomResponse;
+import com.roommade.domain.room.dto.response.ShopFurnitureListResponse;
+import com.roommade.domain.room.mapper.RoomMapper;
+import com.roommade.global.exception.BusinessException;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class RoomServiceImpl implements RoomService {
+
+    private static final List<Integer> FURNITURE_REWARD_STAGES =
+            List.of(15, 30, 45, 60, 75);
+
+    private final RoomMapper roomMapper;
+    private final PreparationService preparationService;
+    private final CoinService coinService;
+
+    @Override
+    public RoomResponse getRoom(Long userId) {
+        ReadinessDiagnosisResponse readiness =
+                preparationService.getReadinessDiagnosis(userId);
+        return new RoomResponse(
+                readiness.getReadinessScore(),
+                roomMapper.findOwnedFurnitureByUserId(userId));
+    }
+
+    @Override
+    public FurnitureRewardsResponse getPendingRewards(Long userId) {
+        List<FurnitureRewardResponse> rewards = roomMapper.findPendingRewardsByUserId(userId)
+                .stream()
+                .map(reward -> new FurnitureRewardResponse(
+                        reward.getRewardId(),
+                        reward.getRewardStage(),
+                        reward.getGrantedAt(),
+                        roomMapper.findSelectableFurniture(
+                                userId, reward.getRewardStage())))
+                .collect(Collectors.toList());
+        return new FurnitureRewardsResponse(rewards);
+    }
+
+    @Override
+    @Transactional
+    public RoomFurnitureResponse claimReward(
+            Long userId, Long rewardId, Long furnitureId) {
+        FurnitureRewardSourceResponse reward =
+                roomMapper.findPendingRewardForUpdate(userId, rewardId);
+        if (reward == null) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_REWARD_NOT_AVAILABLE);
+        }
+        if (!roomMapper.existsSelectableFurniture(
+                userId, furnitureId, reward.getRewardStage())) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_NOT_SELECTABLE);
+        }
+
+        roomMapper.unplaceFurnitureInSameCategory(userId, furnitureId);
+        if (roomMapper.insertUserFurniture(userId, furnitureId) == 0) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_NOT_SELECTABLE);
+        }
+        if (roomMapper.claimReward(userId, rewardId, furnitureId) == 0) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_REWARD_NOT_AVAILABLE);
+        }
+        return roomMapper.findOwnedFurnitureById(userId, furnitureId);
+    }
+
+    @Override
+    @Transactional
+    public RoomFurnitureResponse updatePlacement(
+            Long userId, Long furnitureId, boolean placed) {
+        if (!roomMapper.existsOwnedFurniture(userId, furnitureId)) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_NOT_OWNED);
+        }
+        if (placed) {
+            roomMapper.unplaceFurnitureInSameCategory(userId, furnitureId);
+        }
+        roomMapper.updateFurniturePlacement(userId, furnitureId, placed);
+        return roomMapper.findOwnedFurnitureById(userId, furnitureId);
+    }
+
+    @Override
+    public ShopFurnitureListResponse getShopFurniture(Long userId, Long categoryId) {
+        return new ShopFurnitureListResponse(
+                roomMapper.findShopFurniture(userId, categoryId));
+    }
+
+    @Override
+    @Transactional
+    public RoomFurnitureResponse purchaseFurniture(Long userId, Long furnitureId) {
+        Integer price = roomMapper.findShopFurniturePrice(furnitureId);
+        if (price == null) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_NOT_PURCHASABLE);
+        }
+        if (!roomMapper.existsUnlockedCategoryForShopFurniture(userId, furnitureId)) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_CATEGORY_NOT_UNLOCKED);
+        }
+        if (roomMapper.insertPurchasedFurniture(userId, furnitureId) == 0) {
+            throw new BusinessException(RoomErrorCode.FURNITURE_ALREADY_OWNED);
+        }
+        coinService.spend(userId, price);
+        return roomMapper.findOwnedFurnitureById(userId, furnitureId);
+    }
+
+    @Override
+    @Transactional
+    public void initializeRoom(Long userId) {
+        roomMapper.insertInitialFurniture(userId);
+        synchronizeReadinessRewards(userId);
+    }
+
+    @Override
+    @Transactional
+    public void synchronizeReadinessRewards(Long userId) {
+        ReadinessDiagnosisResponse readiness =
+                preparationService.getReadinessDiagnosis(userId);
+
+        if (readiness.getIndependenceStatus() != IndependenceStatus.PREPARING) {
+            roomMapper.insertAllMissingBasicFurniture(userId);
+            return;
+        }
+
+        BigDecimal score = readiness.getReadinessScore();
+        for (int stage : FURNITURE_REWARD_STAGES) {
+            if (score.compareTo(BigDecimal.valueOf(stage)) >= 0) {
+                roomMapper.insertRewardIfAbsent(userId, stage);
+            }
+        }
+    }
+}

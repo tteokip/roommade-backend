@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.roommade.domain.house.mapper.HouseBalanceGameMapper">
+
+    <select id="findQuestionsOrderByQuestionOrder"
+            resultType="com.roommade.domain.house.dto.response.PreferenceQuestionResponse">
+        SELECT id, option_a_text, option_a_factor, option_b_text, option_b_factor
+        FROM preference_questions
+        ORDER BY question_order ASC
+    </select>
+
+    <select id="findAnswersByComparisonId"
+            resultType="com.roommade.domain.house.dto.response.PreferenceAnswerResponse">
+        SELECT question_id, selected_side
+        FROM preference_answers
+        WHERE comparison_id = #{comparisonId}
+    </select>
+
+    <insert id="insertOrUpdateAnswer">
+        INSERT INTO preference_answers (comparison_id, question_id, selected_side)
+        VALUES (#{comparisonId}, #{questionId}, #{selectedSide})
+        ON DUPLICATE KEY UPDATE selected_side = VALUES(selected_side)
+    </insert>
+
+</mapper>

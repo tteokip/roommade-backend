@@ -18,6 +18,11 @@ public class HealthController {
 
     private final HealthCheckService healthCheckService;
 
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of("status", "UP"));
+    }
+
     @GetMapping("/health/db")
     public ResponseEntity<Map<String, String>> healthDb() {
         boolean databaseUp = healthCheckService.isDatabaseUp();
