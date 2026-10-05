@@ -46,3 +46,7 @@ jobs:
 
       - name: Build with Gradle (compile + test + package)
         run: ./gradlew build
+        env:
+          DB_JDBC_URL: "jdbc:mysql://127.0.0.1:3306/roommade?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+          DB_USERNAME: root
+          DB_PASSWORD: ""

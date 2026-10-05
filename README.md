@@ -70,14 +70,25 @@ src/main/webapp/WEB-INF/
 
    정보가 정상적으로 출력되면 실행 중인 것입니다. 출력되지 않으면 Docker Desktop을 먼저 켜주세요.
 
-3. 환경 변수 파일과 DB 접속 정보 파일을 준비합니다. 두 파일 모두 로컬 전용 값이며 커밋되지 않습니다(`.gitignore` 처리됨).
+3. 환경 변수 파일을 준비합니다. `.env`는 로컬 전용 값이며 커밋되지 않습니다(`.gitignore` 처리됨).
 
    | macOS / Linux / Git Bash | Windows (cmd) | Windows (PowerShell) |
    |---|---|---|
    | `cp .env.sample .env` | `copy .env.sample .env` | `Copy-Item .env.sample .env` |
-   | `cp src/main/resources/db.properties.sample src/main/resources/db.properties` | `copy src\main\resources\db.properties.sample src\main\resources\db.properties` | `Copy-Item src\main\resources\db.properties.sample src\main\resources\db.properties` |
 
-   `.env`의 포트·계정·DB명을 바꿨다면 `db.properties`도 함께 맞춰주세요.
+   로컬 `appRun`은 `DB_*`를 우선 사용하며, 값이 없으면 `.env`의 `MYSQL_PORT`, `MYSQL_DATABASE`,
+   `MYSQL_USER`, `MYSQL_PASSWORD`로 DB 접속 정보를 구성합니다. 운영 환경에서는 `.env`를 배포하지 않고
+   Tomcat 프로세스에 `DB_*` 환경 변수를 주입합니다.
+
+   | 환경 변수 | 용도 | 운영 환경 |
+   |---|---|---|
+   | `DB_JDBC_URL` | MySQL JDBC URL | 필수 |
+   | `DB_USERNAME` | DB 계정 | 필수 |
+   | `DB_PASSWORD` | DB 비밀번호 | 필수 |
+   | `DB_JDBC_DRIVER` | JDBC 드라이버 | 선택, 기본값 `com.mysql.cj.jdbc.Driver` |
+   | `DB_POOL_MAXIMUM_SIZE` | Hikari 최대 커넥션 수 | 선택, 기본값 `10` |
+   | `DB_POOL_MINIMUM_IDLE` | Hikari 최소 유휴 커넥션 수 | 선택, 기본값 `2` |
+   | `DB_POOL_CONNECTION_TIMEOUT_MS` | Hikari 연결 제한 시간(ms) | 선택, 기본값 `30000` |
 
    매물 이미지 분석 API를 사용하려면 `.env`의 `OPENAI_API_KEY`를 입력합니다. 비워두어도
    빌드와 서버 기동은 가능하며, 분석 API 호출만 실패합니다.
@@ -93,8 +104,8 @@ src/main/webapp/WEB-INF/
    TMAP_API_KEY=발급받은 키
    ```
 
-   로컬 `appRun`은 이 값들을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
-   시크릿으로 주입하며, 실제 키는 Git 추적 파일에 넣지 않습니다.
+   로컬 `appRun`은 `.env`의 값을 서버에 전달합니다. 배포 환경에서는 `.env` 대신 환경 변수나
+   시크릿으로 주입하며, 실제 키와 DB 비밀번호는 Git 추적 파일이나 WAR에 넣지 않습니다.
 
 4. Docker로 로컬 MySQL을 띄우고, 정상 기동(`healthy`)될 때까지 기다립니다.
 
