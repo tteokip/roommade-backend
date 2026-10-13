@@ -23,6 +23,8 @@ Optional options:
   --tomcat-user USER   Owner of roommade.war. Default: User= in the systemd unit.
   --tomcat-group GROUP Group of roommade.war. Default: Group= in the systemd unit.
   --health-timeout N   Seconds to wait for the health endpoint. Default: 30
+  --smoke-url URL      Extra URL expected to return HTTP 200 after the health check.
+                       Repeatable. If any fails, the previous WAR is restored.
   --help               Show this help message.
 EOF
 }
@@ -40,6 +42,7 @@ BACKUP_DIR=""
 TOMCAT_USER=""
 TOMCAT_GROUP=""
 HEALTH_TIMEOUT=30
+SMOKE_URLS=()
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -73,6 +76,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --health-timeout)
             HEALTH_TIMEOUT="${2:-}"
+            shift 2
+            ;;
+        --smoke-url)
+            [[ -n "${2:-}" ]] || fail "--smoke-url에는 URL이 필요합니다."
+            SMOKE_URLS+=("$2")
             shift 2
             ;;
         --help)
@@ -151,6 +159,28 @@ wait_for_health() {
     return 1
 }
 
+# health check가 통과한 뒤 DB 조회 같은 핵심 경로가 실제로 동작하는지 확인한다.
+run_smoke_tests() {
+    local url status_code attempt
+
+    for url in ${SMOKE_URLS[@]+"${SMOKE_URLS[@]}"}; do
+        status_code=""
+        for attempt in 1 2 3; do
+            status_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "${url}" || true)"
+            if [[ "${status_code}" == "200" ]]; then
+                break
+            fi
+            sleep 2
+        done
+
+        if [[ "${status_code}" != "200" ]]; then
+            echo "스모크 테스트 실패: ${url} -> HTTP ${status_code:-000}" >&2
+            return 1
+        fi
+        echo "스모크 테스트 통과: ${url} -> HTTP 200"
+    done
+}
+
 rollback() {
     local exit_code="$1"
 
@@ -219,10 +249,15 @@ echo "새 WAR 배치 완료: ${TARGET_WAR}"
 systemctl start "${SERVICE_NAME}"
 echo "Tomcat 시작 요청 완료: ${SERVICE_NAME}"
 
-if wait_for_health; then
-    echo "배포 성공: ${HEALTH_URL} -> HTTP 200"
-    exit 0
+if ! wait_for_health; then
+    echo "배포 실패: ${HEALTH_TIMEOUT}초 안에 health check가 성공하지 않았습니다: ${HEALTH_URL}" >&2
+    rollback 1
 fi
 
-echo "배포 실패: ${HEALTH_TIMEOUT}초 안에 health check가 성공하지 않았습니다: ${HEALTH_URL}" >&2
-rollback 1
+if ! run_smoke_tests; then
+    echo "배포 실패: 스모크 테스트가 통과하지 않았습니다." >&2
+    rollback 1
+fi
+
+echo "배포 성공: ${HEALTH_URL} -> HTTP 200"
+exit 0
