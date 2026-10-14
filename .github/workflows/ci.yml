@@ -114,9 +114,13 @@ jobs:
       - name: Run deploy script on server
         run: |
           REMOTE_WAR="/tmp/$(basename "${WAR_PATH}")"
+          # DEPLOY_HEALTH_URL(.../health)에서 베이스 주소를 뽑아 DB와 실제 조회 경로를 스모크 테스트한다.
+          BASE_URL="${HEALTH_URL%/health}"
           ssh -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" \
             "sudo bash /tmp/deploy.sh \
               --war '${REMOTE_WAR}' \
               --webapps-dir '${WEBAPPS_DIR}' \
               --service-name '${SERVICE_NAME}' \
-              --health-url '${HEALTH_URL}'"
+              --health-url '${HEALTH_URL}' \
+              --smoke-url '${BASE_URL}/health/db' \
+              --smoke-url '${BASE_URL}/api/financial-products/deposits'"
